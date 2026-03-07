@@ -1,0 +1,62 @@
+[
+  {
+    "topic_id": "python_fundamentals",
+    "title": "Python Fundamentals",
+    "description": "Core Python syntax, data types, control flow, functions, and file I/O.",
+    "difficulty": 0.2
+  },
+  {
+    "topic_id": "data_structures",
+    "title": "Data Structures & Algorithms",
+    "description": "Arrays, linked lists, trees, graphs, sorting, searching, and complexity analysis.",
+    "difficulty": 0.4
+  },
+  {
+    "topic_id": "linear_algebra",
+    "title": "Linear Algebra",
+    "description": "Vectors, matrices, eigenvalues, singular value decomposition, and linear transformations.",
+    "difficulty": 0.5
+  },
+  {
+    "topic_id": "probability_statistics",
+    "title": "Probability & Statistics",
+    "description": "Probability distributions, Bayes theorem, hypothesis testing, and statistical inference.",
+    "difficulty": 0.5
+  },
+  {
+    "topic_id": "numpy_pandas",
+    "title": "NumPy & Pandas",
+    "description": "Numerical computing with NumPy arrays and data manipulation with Pandas DataFrames.",
+    "difficulty": 0.3
+  },
+  {
+    "topic_id": "machine_learning_basics",
+    "title": "Machine Learning Basics",
+    "description": "Supervised vs unsupervised learning, bias-variance tradeoff, cross-validation, and evaluation metrics.",
+    "difficulty": 0.5
+  },
+  {
+    "topic_id": "deep_learning_fundamentals",
+    "title": "Deep Learning Fundamentals",
+    "description": "Neural network architecture, backpropagation, activation functions, and optimization.",
+    "difficulty": 0.7
+  },
+  {
+    "topic_id": "nlp_basics",
+    "title": "Natural Language Processing",
+    "description": "Tokenization, embeddings, sequence models, attention mechanism, and transformers.",
+    "difficulty": 0.7
+  },
+  {
+    "topic_id": "pytorch_framework",
+    "title": "PyTorch Framework",
+    "description": "Tensors, autograd, nn.Module, DataLoader, training loops, and model serialization.",
+    "difficulty": 0.6
+  },
+  {
+    "topic_id": "model_deployment",
+    "title": "Model Deployment & MLOps",
+    "description": "Model serving with FastAPI, containerization, CI/CD for ML, and monitoring in production.",
+    "difficulty": 0.8
+  }
+]

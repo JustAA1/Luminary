@@ -1,0 +1,14 @@
+{
+  "edges": [
+    { "from": "python_fundamentals", "to": "data_structures" },
+    { "from": "python_fundamentals", "to": "numpy_pandas" },
+    { "from": "linear_algebra", "to": "machine_learning_basics" },
+    { "from": "probability_statistics", "to": "machine_learning_basics" },
+    { "from": "numpy_pandas", "to": "machine_learning_basics" },
+    { "from": "machine_learning_basics", "to": "deep_learning_fundamentals" },
+    { "from": "deep_learning_fundamentals", "to": "nlp_basics" },
+    { "from": "deep_learning_fundamentals", "to": "pytorch_framework" },
+    { "from": "pytorch_framework", "to": "model_deployment" },
+    { "from": "nlp_basics", "to": "model_deployment" }
+  ]
+}
