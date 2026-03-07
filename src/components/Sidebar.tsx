@@ -12,6 +12,7 @@ import {
   Sparkles,
   LogOut,
   Loader2,
+  Settings,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -22,6 +23,7 @@ const navItems = [
   { href: "/progress", label: "Progress", icon: BarChart3 },
   { href: "/roadmap", label: "Roadmap", icon: Map },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export default function Sidebar() {
@@ -96,7 +98,7 @@ export default function Sidebar() {
           fixed top-0 left-0 z-50 flex h-screen w-64 flex-col border-r border-surface-border bg-surface
           transition-transform duration-300 ease-in-out
           ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
-          md:translate-x-0 md:static md:z-auto
+          md:translate-x-0
         `}
       >
         {/* Close button (mobile) */}
