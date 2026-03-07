@@ -23,12 +23,26 @@ const monthlyProgress = [
 ];
 
 const skillBreakdown = [
-  { skill: "Programming", level: 85, color: "bg-blue-500" },
-  { skill: "Web Development", level: 72, color: "bg-cyan-500" },
-  { skill: "Data Science", level: 45, color: "bg-purple-500" },
-  { skill: "Machine Learning", level: 28, color: "bg-orange-500" },
-  { skill: "Mathematics", level: 65, color: "bg-emerald-500" },
+  { skill: "Programming", level: 85 },
+  { skill: "Web Development", level: 72 },
+  { skill: "Data Science", level: 45 },
+  { skill: "Machine Learning", level: 28 },
+  { skill: "Mathematics", level: 65 },
 ];
+
+// Returns a red-to-green CSS gradient based on 0-100 level
+function levelGradient(level: number) {
+  // hue: 0 = red, 60 = yellow, 120 = green
+  const hue = Math.round((level / 100) * 120);
+  return `linear-gradient(90deg, hsl(0,80%,48%), hsl(${hue},80%,44%))`;
+}
+
+function overallGradient() {
+  // Full spectrum from red→yellow→green always covers 0-100% of the bar container.
+  // The bar itself is clipped to `width: pct%`, so the colour at the right edge
+  // naturally reflects where pct sits on the red→green spectrum.
+  return "linear-gradient(90deg, #ef4444 0%, #eab308 50%, #46b533 100%)";
+}
 
 const recentAchievements = [
   { title: "First 100 Hours", desc: "Completed 100 total learning hours", date: "Feb 28", icon: "🏆" },
@@ -66,10 +80,10 @@ export default function ProgressPage() {
             <p className="text-sm text-muted mb-4">
               You&apos;re making great progress! Keep it up.
             </p>
-            <div className="h-4 w-full rounded-full bg-surface-hover">
+            <div className="h-4 w-full rounded-full bg-surface-hover overflow-hidden">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-dallas-green to-dallas-green-light animate-progress-fill relative"
-                style={{ width: `${totalProgress}%` }}
+                className="h-full rounded-full animate-progress-fill relative"
+                style={{ width: `${totalProgress}%`, background: overallGradient() }}
               >
                 <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-white">
                   {totalProgress}%
@@ -238,10 +252,10 @@ export default function ProgressPage() {
                   <span className="text-sm font-medium">{skill.skill}</span>
                   <span className="text-xs font-semibold text-muted">{skill.level}%</span>
                 </div>
-                <div className="h-2.5 w-full rounded-full bg-surface-hover">
+                <div className="h-2.5 w-full rounded-full bg-surface-hover overflow-hidden">
                   <div
-                    className={`h-full rounded-full ${skill.color} animate-progress-fill`}
-                    style={{ width: `${skill.level}%` }}
+                    className="h-full rounded-full animate-progress-fill"
+                    style={{ width: `${skill.level}%`, background: levelGradient(skill.level) }}
                   />
                 </div>
               </div>
