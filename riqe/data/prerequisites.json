@@ -1,14 +1,25 @@
 {
   "edges": [
-    { "from": "python_fundamentals", "to": "data_structures" },
-    { "from": "python_fundamentals", "to": "numpy_pandas" },
-    { "from": "linear_algebra", "to": "machine_learning_basics" },
-    { "from": "probability_statistics", "to": "machine_learning_basics" },
-    { "from": "numpy_pandas", "to": "machine_learning_basics" },
-    { "from": "machine_learning_basics", "to": "deep_learning_fundamentals" },
-    { "from": "deep_learning_fundamentals", "to": "nlp_basics" },
-    { "from": "deep_learning_fundamentals", "to": "pytorch_framework" },
-    { "from": "pytorch_framework", "to": "model_deployment" },
-    { "from": "nlp_basics", "to": "model_deployment" }
+    { "from": "probability_theory", "to": "stochastic_calculus" },
+    { "from": "probability_theory", "to": "statistics_econometrics" },
+    { "from": "probability_theory", "to": "quant_interview_prep" },
+    { "from": "linear_algebra_quant", "to": "portfolio_optimization" },
+    { "from": "linear_algebra_quant", "to": "numerical_methods" },
+    { "from": "statistics_econometrics", "to": "time_series_analysis" },
+    { "from": "statistics_econometrics", "to": "ml_for_finance" },
+    { "from": "stochastic_calculus", "to": "derivatives_pricing" },
+    { "from": "stochastic_calculus", "to": "volatility_modeling" },
+    { "from": "stochastic_calculus", "to": "fixed_income" },
+    { "from": "time_series_analysis", "to": "volatility_modeling" },
+    { "from": "time_series_analysis", "to": "algorithmic_trading" },
+    { "from": "derivatives_pricing", "to": "risk_management" },
+    { "from": "derivatives_pricing", "to": "volatility_modeling" },
+    { "from": "portfolio_optimization", "to": "risk_management" },
+    { "from": "numerical_methods", "to": "derivatives_pricing" },
+    { "from": "python_for_quant", "to": "ml_for_finance" },
+    { "from": "python_for_quant", "to": "numerical_methods" },
+    { "from": "python_for_quant", "to": "algorithmic_trading" },
+    { "from": "ml_for_finance", "to": "algorithmic_trading" },
+    { "from": "volatility_modeling", "to": "risk_management" }
   ]
 }

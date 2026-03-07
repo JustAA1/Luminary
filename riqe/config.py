@@ -71,8 +71,8 @@ NUM_TREND_CLASSES: Final[int] = 3         # rising, stable, fading
 NUM_SIGNAL_TYPES: Final[int] = 3          # new_info, reinforcement, contradiction
 
 # ── Topics ────────────────────────────────────────────────────────────
-N_TOPICS: Final[int] = 50                 # max topic classes for classifier head
-TOP_K_ROADMAP: Final[int] = 20           # roadmap picks top-K topics
+N_TOPICS: Final[int] = 15                 # quant-specific topic classes
+TOP_K_ROADMAP: Final[int] = 15           # roadmap includes all quant topics
 
 # ── Signal Processing ────────────────────────────────────────────────
 SIGNAL_BUFFER_SIZE: Final[int] = 20

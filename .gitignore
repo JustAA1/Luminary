@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+
+# ML / runs
+mlruns/
+*.pt
+riqe/models/checkpoints/*.pt
+
+# Test / build
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+*.egg-info/
+
+# Env
+.env
+.env.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs and temp
+e2e_*.txt
+*.log

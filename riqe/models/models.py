@@ -114,17 +114,19 @@ class RIQESignalClassifier(nn.Module):
     """
     Multi-head classifier for incoming text signals.
 
-    Shared trunk
-    ────────────
-    Linear(384, 128) → ReLU → Dropout(0.3)
+    Shared trunk (deep)
+    ───────────────────
+    Linear(384, 256) -> BatchNorm -> ReLU -> Dropout(0.2)
+    Linear(256, 128) -> BatchNorm -> ReLU -> Dropout(0.2)
+    + residual: Linear(384, 128) skip connection
 
-    Heads
-    ─────
-    1. topic      : Linear(128, N_TOPICS) → Softmax
-    2. strength   : Linear(128, 1)        → Sigmoid
-    3. signal_type: Linear(128, 3)        → Softmax  (new_info / reinforcement / contradiction)
+    Heads (2-layer each)
+    ────────────────────
+    1. topic      : Linear(128, 64) -> ReLU -> Linear(64, N_TOPICS)
+    2. strength   : Linear(128, 32) -> ReLU -> Linear(32, 1) -> Sigmoid
+    3. signal_type: Linear(128, 32) -> ReLU -> Linear(32, 3)
 
-    Composite loss = 0.4 · CE(topic) + 0.4 · BCE(strength) + 0.2 · CE(signal_type)
+    Composite loss = 0.4 * CE(topic) + 0.4 * BCE(strength) + 0.2 * CE(signal_type)
     """
 
     SIGNAL_TYPE_LABELS: list[str] = ["new_info", "reinforcement", "contradiction"]
@@ -133,17 +135,37 @@ class RIQESignalClassifier(nn.Module):
         super().__init__()
         self.n_topics = n_topics
 
-        # shared trunk
+        # Deep shared trunk with batch norm
         self.trunk = nn.Sequential(
-            nn.Linear(TEXT_EMBED_DIM, SIGNAL_TRUNK_DIM),
+            nn.Linear(TEXT_EMBED_DIM, 256),
+            nn.BatchNorm1d(256),
             nn.ReLU(),
-            nn.Dropout(SIGNAL_DROPOUT),
+            nn.Dropout(0.2),
+            nn.Linear(256, SIGNAL_TRUNK_DIM),
+            nn.BatchNorm1d(SIGNAL_TRUNK_DIM),
+            nn.ReLU(),
+            nn.Dropout(0.2),
         )
 
-        # heads
-        self.head_topic = nn.Linear(SIGNAL_TRUNK_DIM, n_topics)
-        self.head_strength = nn.Linear(SIGNAL_TRUNK_DIM, 1)
-        self.head_signal_type = nn.Linear(SIGNAL_TRUNK_DIM, NUM_SIGNAL_TYPES)
+        # Residual skip connection
+        self.skip = nn.Linear(TEXT_EMBED_DIM, SIGNAL_TRUNK_DIM)
+
+        # 2-layer heads for better discrimination
+        self.head_topic = nn.Sequential(
+            nn.Linear(SIGNAL_TRUNK_DIM, 64),
+            nn.ReLU(),
+            nn.Linear(64, n_topics),
+        )
+        self.head_strength = nn.Sequential(
+            nn.Linear(SIGNAL_TRUNK_DIM, 32),
+            nn.ReLU(),
+            nn.Linear(32, 1),
+        )
+        self.head_signal_type = nn.Sequential(
+            nn.Linear(SIGNAL_TRUNK_DIM, 32),
+            nn.ReLU(),
+            nn.Linear(32, NUM_SIGNAL_TYPES),
+        )
 
         _maybe_load_checkpoint(self, "signal_classifier")
 
@@ -161,7 +183,7 @@ class RIQESignalClassifier(nn.Module):
         strength      : (batch, 1)   in [0, 1]
         type_logits   : (batch, 3)
         """
-        h = self.trunk(x)
+        h = self.trunk(x) + self.skip(x)   # residual connection
         topic_logits = self.head_topic(h)
         strength = torch.sigmoid(self.head_strength(h))
         type_logits = self.head_signal_type(h)

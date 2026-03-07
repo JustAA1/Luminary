@@ -1,62 +1,92 @@
 [
   {
-    "topic_id": "python_fundamentals",
-    "title": "Python Fundamentals",
-    "description": "Core Python syntax, data types, control flow, functions, and file I/O.",
-    "difficulty": 0.2
-  },
-  {
-    "topic_id": "data_structures",
-    "title": "Data Structures & Algorithms",
-    "description": "Arrays, linked lists, trees, graphs, sorting, searching, and complexity analysis.",
-    "difficulty": 0.4
-  },
-  {
-    "topic_id": "linear_algebra",
-    "title": "Linear Algebra",
-    "description": "Vectors, matrices, eigenvalues, singular value decomposition, and linear transformations.",
-    "difficulty": 0.5
-  },
-  {
-    "topic_id": "probability_statistics",
-    "title": "Probability & Statistics",
-    "description": "Probability distributions, Bayes theorem, hypothesis testing, and statistical inference.",
-    "difficulty": 0.5
-  },
-  {
-    "topic_id": "numpy_pandas",
-    "title": "NumPy & Pandas",
-    "description": "Numerical computing with NumPy arrays and data manipulation with Pandas DataFrames.",
+    "topic_id": "probability_theory",
+    "title": "Probability Theory for Quant",
+    "description": "Measure theory foundations, probability spaces, random variables, distributions, expectation, conditional probability, and the law of large numbers.",
     "difficulty": 0.3
   },
   {
-    "topic_id": "machine_learning_basics",
-    "title": "Machine Learning Basics",
-    "description": "Supervised vs unsupervised learning, bias-variance tradeoff, cross-validation, and evaluation metrics.",
+    "topic_id": "stochastic_calculus",
+    "title": "Stochastic Calculus",
+    "description": "Brownian motion, Ito calculus, stochastic differential equations, Ito's lemma, Girsanov theorem, and martingale representation.",
+    "difficulty": 0.7
+  },
+  {
+    "topic_id": "linear_algebra_quant",
+    "title": "Linear Algebra for Quantitative Finance",
+    "description": "Matrix decompositions, eigenvalues, PCA for risk factors, covariance matrices, Cholesky decomposition, and numerical linear algebra.",
+    "difficulty": 0.4
+  },
+  {
+    "topic_id": "statistics_econometrics",
+    "title": "Statistics & Econometrics",
+    "description": "Regression analysis, hypothesis testing, maximum likelihood estimation, GMM, time series econometrics, and panel data methods.",
+    "difficulty": 0.4
+  },
+  {
+    "topic_id": "time_series_analysis",
+    "title": "Time Series Analysis",
+    "description": "ARIMA, GARCH, cointegration, autocorrelation, stationarity tests, VAR models, and spectral analysis for financial data.",
     "difficulty": 0.5
   },
   {
-    "topic_id": "deep_learning_fundamentals",
-    "title": "Deep Learning Fundamentals",
-    "description": "Neural network architecture, backpropagation, activation functions, and optimization.",
+    "topic_id": "derivatives_pricing",
+    "title": "Derivatives Pricing",
+    "description": "Black-Scholes model, Greeks, binomial trees, Monte Carlo simulation, exotic options, interest rate derivatives, and volatility surfaces.",
     "difficulty": 0.7
   },
   {
-    "topic_id": "nlp_basics",
-    "title": "Natural Language Processing",
-    "description": "Tokenization, embeddings, sequence models, attention mechanism, and transformers.",
-    "difficulty": 0.7
-  },
-  {
-    "topic_id": "pytorch_framework",
-    "title": "PyTorch Framework",
-    "description": "Tensors, autograd, nn.Module, DataLoader, training loops, and model serialization.",
+    "topic_id": "portfolio_optimization",
+    "title": "Portfolio Optimization",
+    "description": "Mean-variance optimization, efficient frontier, CAPM, factor models, Black-Litterman, risk parity, and robust optimization.",
     "difficulty": 0.6
   },
   {
-    "topic_id": "model_deployment",
-    "title": "Model Deployment & MLOps",
-    "description": "Model serving with FastAPI, containerization, CI/CD for ML, and monitoring in production.",
+    "topic_id": "risk_management",
+    "title": "Risk Management",
+    "description": "Value at Risk, Expected Shortfall, stress testing, credit risk models, counterparty risk, Basel regulatory framework, and risk attribution.",
+    "difficulty": 0.6
+  },
+  {
+    "topic_id": "algorithmic_trading",
+    "title": "Algorithmic Trading & Execution",
+    "description": "Market microstructure, order book dynamics, execution algorithms (VWAP, TWAP), transaction cost analysis, high-frequency strategies, and latency optimization.",
     "difficulty": 0.8
+  },
+  {
+    "topic_id": "ml_for_finance",
+    "title": "Machine Learning for Finance",
+    "description": "Supervised learning for alpha generation, feature engineering for financial data, cross-validation for time series, ensemble methods, and neural networks for price prediction.",
+    "difficulty": 0.7
+  },
+  {
+    "topic_id": "fixed_income",
+    "title": "Fixed Income Analytics",
+    "description": "Bond pricing, yield curves, duration and convexity, term structure models, mortgage-backed securities, and credit spread modeling.",
+    "difficulty": 0.6
+  },
+  {
+    "topic_id": "numerical_methods",
+    "title": "Numerical Methods in Finance",
+    "description": "Finite difference methods, Monte Carlo simulation, quasi-random sequences, numerical PDE solvers, calibration algorithms, and root-finding methods.",
+    "difficulty": 0.6
+  },
+  {
+    "topic_id": "python_for_quant",
+    "title": "Python for Quantitative Finance",
+    "description": "NumPy, Pandas, SciPy for financial computation, vectorized operations, data pipelines, API integration with market data providers, and backtesting frameworks.",
+    "difficulty": 0.3
+  },
+  {
+    "topic_id": "volatility_modeling",
+    "title": "Volatility Modeling",
+    "description": "Implied vs realized volatility, GARCH family models, stochastic volatility (Heston, SABR), volatility surfaces, variance swaps, and VIX.",
+    "difficulty": 0.7
+  },
+  {
+    "topic_id": "quant_interview_prep",
+    "title": "Quant Interview & Problem Solving",
+    "description": "Brain teasers, probability puzzles, mental math, coding challenges, options pricing on the spot, and market-making scenarios.",
+    "difficulty": 0.5
   }
 ]

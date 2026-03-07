@@ -1,0 +1,65 @@
+[
+  {
+    "user_id": "quant_001",
+    "resume_text": "Mathematics major at NYU Courant, junior year. Strong in real analysis and probability theory. Took one finance elective and got hooked. Want to become a quant trader. Been doing Project Euler problems and reading Wilmott's FAQ.",
+    "skill_scores": {"probability": 0.7, "linear_algebra": 0.65, "calculus": 0.8, "python": 0.3, "statistics": 0.5},
+    "interests": ["quantitative trading", "derivatives pricing", "stochastic processes"],
+    "field_of_study": "mathematics",
+    "timeframe_weeks": 16,
+    "learning_history": [
+      {"topic_id": "probability_theory", "timestamp": "2025-09-01T00:00:00", "completion_rate": 0.85, "quiz_score": 0.82, "time_spent_minutes": 200, "revisit_count": 1}
+    ]
+  },
+  {
+    "user_id": "quant_002",
+    "resume_text": "physics PhD from MIT, thesis on computational fluid dynamics. strong C++ and python. 1 year at a prop trading firm as a junior quant doing stat arb research. want to deepen derivatives knowledge and stochastic calc. know basic black scholes but need the full mathematical framework",
+    "skill_scores": {"python": 0.8, "cpp": 0.85, "probability": 0.75, "statistics": 0.7, "linear_algebra": 0.8, "numerical_methods": 0.7, "pde": 0.75},
+    "interests": ["exotic derivatives", "stochastic volatility models", "numerical PDE methods"],
+    "field_of_study": "physics",
+    "timeframe_weeks": 10,
+    "learning_history": [
+      {"topic_id": "probability_theory", "timestamp": "2025-01-01T00:00:00", "completion_rate": 1.0, "quiz_score": 0.9, "time_spent_minutes": 80, "revisit_count": 0},
+      {"topic_id": "linear_algebra_quant", "timestamp": "2025-02-01T00:00:00", "completion_rate": 1.0, "quiz_score": 0.88, "time_spent_minutes": 60, "revisit_count": 0},
+      {"topic_id": "numerical_methods", "timestamp": "2025-03-01T00:00:00", "completion_rate": 0.8, "quiz_score": 0.75, "time_spent_minutes": 150, "revisit_count": 1},
+      {"topic_id": "python_for_quant", "timestamp": "2025-04-01T00:00:00", "completion_rate": 0.9, "quiz_score": 0.85, "time_spent_minutes": 100, "revisit_count": 0}
+    ]
+  },
+  {
+    "user_id": "quant_003",
+    "resume_text": "Econ undergrad switching to MFE program. decent at statistics and econometrics from my degree. zero knowledge of stochastic calculus or derivatives. need to learn everything from scratch for my masters starting in fall.",
+    "skill_scores": {"statistics": 0.6, "econometrics": 0.55, "python": 0.35, "excel": 0.7, "r": 0.5},
+    "interests": ["MFE prep", "options trading", "risk management"],
+    "field_of_study": "economics",
+    "timeframe_weeks": 20,
+    "learning_history": [
+      {"topic_id": "statistics_econometrics", "timestamp": "2025-10-01T00:00:00", "completion_rate": 0.7, "quiz_score": 0.6, "time_spent_minutes": 250, "revisit_count": 2}
+    ]
+  },
+  {
+    "user_id": "quant_004",
+    "resume_text": "Senior quant at Citadel, 8 years experience. Built vol surface calibration models and exotic pricing engines. Expert in C++ and Python. Looking to learn modern ML approaches for alpha generation and execution optimization. Already know traditional quant stuff cold.",
+    "skill_scores": {"python": 0.9, "cpp": 0.95, "stochastic_calculus": 0.9, "derivatives": 0.95, "risk_management": 0.85, "linear_algebra": 0.85, "probability": 0.9, "numerical_methods": 0.9, "volatility": 0.9},
+    "interests": ["ML for alpha", "deep hedging", "reinforcement learning for execution"],
+    "field_of_study": "mathematics",
+    "timeframe_weeks": 8,
+    "learning_history": [
+      {"topic_id": "probability_theory", "timestamp": "2024-01-01T00:00:00", "completion_rate": 1.0, "quiz_score": 0.98, "time_spent_minutes": 30, "revisit_count": 0},
+      {"topic_id": "stochastic_calculus", "timestamp": "2024-02-01T00:00:00", "completion_rate": 1.0, "quiz_score": 0.95, "time_spent_minutes": 50, "revisit_count": 0},
+      {"topic_id": "derivatives_pricing", "timestamp": "2024-03-01T00:00:00", "completion_rate": 1.0, "quiz_score": 0.97, "time_spent_minutes": 60, "revisit_count": 0},
+      {"topic_id": "volatility_modeling", "timestamp": "2024-04-01T00:00:00", "completion_rate": 1.0, "quiz_score": 0.94, "time_spent_minutes": 70, "revisit_count": 0},
+      {"topic_id": "risk_management", "timestamp": "2024-05-01T00:00:00", "completion_rate": 1.0, "quiz_score": 0.92, "time_spent_minutes": 80, "revisit_count": 0},
+      {"topic_id": "numerical_methods", "timestamp": "2024-06-01T00:00:00", "completion_rate": 1.0, "quiz_score": 0.96, "time_spent_minutes": 40, "revisit_count": 0}
+    ]
+  },
+  {
+    "user_id": "quant_005",
+    "resume_text": "software engineer at bloomberg, 3 years on the fixed income analytics team. I build pricing tools for bonds and swaps but don't fully understand the math behind them. want to go deeper into fixed income quant models. know python well from work.",
+    "skill_scores": {"python": 0.75, "fixed_income_basics": 0.5, "programming": 0.8, "sql": 0.6, "linear_algebra": 0.4, "probability": 0.35},
+    "interests": ["fixed income modeling", "yield curve construction", "interest rate derivatives"],
+    "field_of_study": "computer_science",
+    "timeframe_weeks": 14,
+    "learning_history": [
+      {"topic_id": "python_for_quant", "timestamp": "2025-08-01T00:00:00", "completion_rate": 0.85, "quiz_score": 0.8, "time_spent_minutes": 120, "revisit_count": 0}
+    ]
+  }
+]
