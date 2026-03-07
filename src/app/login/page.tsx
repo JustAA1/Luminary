@@ -36,7 +36,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        scopes: "https://www.googleapis.com/auth/calendar.events.readonly",
+        scopes: "https://www.googleapis.com/auth/calendar",
         redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
@@ -125,8 +125,8 @@ export default function LoginPage() {
           {/* Error / Info message */}
           {error && (
             <div className={`mb-4 flex items-center gap-2 rounded-xl px-4 py-3 text-sm ${error.includes("Check your email")
-                ? "bg-dallas-green/10 border border-dallas-green/20 text-dallas-green"
-                : "bg-red-500/10 border border-red-500/20 text-red-400"
+              ? "bg-dallas-green/10 border border-dallas-green/20 text-dallas-green"
+              : "bg-red-500/10 border border-red-500/20 text-red-400"
               }`}>
               <AlertCircle size={16} className="flex-shrink-0" />
               {error}

@@ -8,6 +8,7 @@ import {
   Clock,
   CheckCircle2,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -122,6 +123,33 @@ export default function CalendarPage() {
   // Week view
   const focusDay = selectedDay || today;
   const focusDayOfWeek = new Date(year, month, focusDay).getDay();
+  const handleSync = async () => {
+    if (!isGoogleConnected) return;
+    try {
+      setIsLoadingGoogle(true);
+      const res = await fetch("/api/calendar/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          events: luminaryEvents.map((ev) => ({
+            ...ev,
+            year,
+            month,
+          })),
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to sync");
+
+      // Refresh events to show the newly synced "Luminary" calendar events
+      fetchGoogleEvents();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to sync to Google Calendar");
+    } finally {
+      setIsLoadingGoogle(false);
+    }
+  };
+
   const weekStart = focusDay - focusDayOfWeek;
 
   return (
@@ -149,9 +177,18 @@ export default function CalendarPage() {
               Loading calendar…
             </div>
           ) : isGoogleConnected ? (
-            <div className="flex items-center gap-2 rounded-xl bg-dallas-green/10 border border-dallas-green/20 px-4 py-2.5 text-sm font-semibold text-dallas-green self-start">
-              <CheckCircle2 size={16} />
-              Google Calendar Connected
+            <div className="flex items-center gap-2 self-start">
+              <div className="flex items-center gap-2 rounded-xl bg-dallas-green/10 border border-dallas-green/20 px-4 py-2.5 text-sm font-semibold text-dallas-green">
+                <CheckCircle2 size={16} />
+                Connected
+              </div>
+              <button
+                onClick={handleSync}
+                className="flex items-center gap-2 rounded-xl bg-surface border border-surface-border hover:border-dallas-green/50 hover:bg-surface-hover px-4 py-2.5 text-sm font-semibold transition-all"
+              >
+                <RefreshCw size={16} />
+                Sync Updates
+              </button>
             </div>
           ) : (
             <div className="rounded-xl bg-surface-hover px-4 py-2.5 text-sm text-muted self-start">
@@ -189,8 +226,8 @@ export default function CalendarPage() {
                   key={v}
                   onClick={() => setView(v)}
                   className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${view === v
-                      ? "bg-dallas-green text-white shadow-sm"
-                      : "text-muted hover:text-foreground"
+                    ? "bg-dallas-green text-white shadow-sm"
+                    : "text-muted hover:text-foreground"
                     }`}
                 >
                   {v.charAt(0).toUpperCase() + v.slice(1)}
@@ -229,18 +266,16 @@ export default function CalendarPage() {
                     key={day}
                     onClick={() => setSelectedDay(day)}
                     className={`aspect-square rounded-xl p-1 transition-all duration-200 flex flex-col items-center ${isSelected
-                        ? "bg-dallas-green/15 ring-1 ring-dallas-green"
-                        : isToday
-                          ? "bg-surface-hover"
-                          : "hover:bg-surface-hover"
+                      ? "bg-dallas-green/15 ring-1 ring-dallas-green"
+                      : "hover:bg-surface-hover"
                       }`}
                   >
                     <span
                       className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium ${isToday
-                          ? "bg-dallas-green text-white font-bold"
-                          : isSelected
-                            ? "text-dallas-green font-bold"
-                            : "text-muted"
+                        ? "bg-dallas-green text-white font-bold"
+                        : isSelected
+                          ? "text-dallas-green font-bold"
+                          : "text-muted"
                         }`}
                     >
                       {day}
@@ -273,14 +308,14 @@ export default function CalendarPage() {
                   <div
                     key={i}
                     className={`rounded-xl border p-3 min-h-[180px] transition-colors ${isToday
-                        ? "border-dallas-green/30 bg-dallas-green/5"
-                        : "border-surface-border bg-background/20"
+                      ? "border-dallas-green/30 bg-dallas-green/5"
+                      : "border-surface-border bg-background/20"
                       }`}
                   >
                     <span
                       className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium ${isToday
-                          ? "bg-dallas-green text-white font-bold"
-                          : "text-muted"
+                        ? "bg-dallas-green text-white font-bold"
+                        : "text-muted"
                         }`}
                     >
                       {day}
