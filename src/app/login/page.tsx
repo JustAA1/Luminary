@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Mail,
   Lock,
@@ -11,13 +11,88 @@ import {
   ArrowRight,
   Github,
   Chrome,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const supabase = createClient();
+
+  const handleGoogleSignIn = async () => {
+    if (!supabase) {
+      setError("Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local.");
+      return;
+    }
+    setGoogleLoading(true);
+    setError(null);
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        scopes: "https://www.googleapis.com/auth/calendar.events.readonly",
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+
+    if (error) {
+      setError(error.message);
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!supabase) {
+      setError("Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local.");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+
+    if (isLogin) {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        setError(error.message);
+        setLoading(false);
+        return;
+      }
+
+      router.push("/");
+      router.refresh();
+    } else {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=/onboarding`,
+        },
+      });
+
+      if (error) {
+        setError(error.message);
+        setLoading(false);
+        return;
+      }
+
+      setError(null);
+      // Show a message to check email for sign-up
+      setError("Check your email for a confirmation link!");
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-12">
@@ -45,10 +120,29 @@ export default function LoginPage() {
 
         {/* Card */}
         <div className="rounded-2xl border border-surface-border bg-surface/80 backdrop-blur-xl p-8 shadow-2xl shadow-black/20">
+          {/* Error / Info message */}
+          {error && (
+            <div className={`mb-4 flex items-center gap-2 rounded-xl px-4 py-3 text-sm ${error.includes("Check your email")
+              ? "bg-dallas-green/10 border border-dallas-green/20 text-dallas-green"
+              : "bg-red-500/10 border border-red-500/20 text-red-400"
+              }`}>
+              <AlertCircle size={16} className="flex-shrink-0" />
+              {error}
+            </div>
+          )}
+
           {/* Social buttons */}
           <div className="mb-6 grid grid-cols-2 gap-3">
-            <button className="flex items-center justify-center gap-2 rounded-xl border border-surface-border bg-background/50 px-4 py-3 text-sm font-medium text-muted hover:bg-surface-hover hover:text-foreground transition-all duration-200">
-              <Chrome size={18} />
+            <button
+              onClick={handleGoogleSignIn}
+              disabled={googleLoading}
+              className="flex items-center justify-center gap-2 rounded-xl border border-surface-border bg-background/50 px-4 py-3 text-sm font-medium text-muted hover:bg-surface-hover hover:text-foreground transition-all duration-200 disabled:opacity-60"
+            >
+              {googleLoading ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <Chrome size={18} />
+              )}
               Google
             </button>
             <button className="flex items-center justify-center gap-2 rounded-xl border border-surface-border bg-background/50 px-4 py-3 text-sm font-medium text-muted hover:bg-surface-hover hover:text-foreground transition-all duration-200">
@@ -70,10 +164,7 @@ export default function LoginPage() {
           </div>
 
           {/* Form */}
-          <form
-            onSubmit={(e) => e.preventDefault()}
-            className="space-y-4"
-          >
+          <form onSubmit={handleEmailAuth} className="space-y-4">
             <div>
               <label
                 htmlFor="email"
@@ -92,6 +183,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
+                  required
                   className="w-full rounded-xl border border-surface-border bg-background/50 py-3 pl-11 pr-4 text-sm text-foreground placeholder:text-muted-dark focus:border-dallas-green focus:outline-none focus:ring-1 focus:ring-dallas-green/50 transition-all"
                 />
               </div>
@@ -115,6 +207,8 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
+                  required
+                  minLength={6}
                   className="w-full rounded-xl border border-surface-border bg-background/50 py-3 pl-11 pr-11 text-sm text-foreground placeholder:text-muted-dark focus:border-dallas-green focus:outline-none focus:ring-1 focus:ring-dallas-green/50 transition-all"
                 />
                 <button
@@ -129,21 +223,29 @@ export default function LoginPage() {
 
             {isLogin && (
               <div className="flex justify-end">
-                <button className="text-xs text-dallas-green hover:text-dallas-green-light transition-colors">
+                <button
+                  type="button"
+                  className="text-xs text-dallas-green hover:text-dallas-green-light transition-colors"
+                >
                   Forgot password?
                 </button>
               </div>
             )}
 
-            <Link href={isLogin ? "/" : "/onboarding"}>
-              <button
-                type="submit"
-                className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-dallas-green px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-dallas-green/25 hover:bg-dallas-green-dark hover:shadow-dallas-green/40 transition-all duration-200 active:scale-[0.98]"
-              >
-                {isLogin ? "Sign In" : "Create Account"}
-                <ArrowRight size={16} />
-              </button>
-            </Link>
+            <button
+              type="submit"
+              disabled={loading}
+              className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-dallas-green px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-dallas-green/25 hover:bg-dallas-green-dark hover:shadow-dallas-green/40 transition-all duration-200 active:scale-[0.98] disabled:opacity-60"
+            >
+              {loading ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <>
+                  {isLogin ? "Sign In" : "Create Account"}
+                  <ArrowRight size={16} />
+                </>
+              )}
+            </button>
           </form>
         </div>
 
@@ -151,7 +253,10 @@ export default function LoginPage() {
         <p className="mt-6 text-center text-sm text-muted">
           {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
           <button
-            onClick={() => setIsLogin(!isLogin)}
+            onClick={() => {
+              setIsLogin(!isLogin);
+              setError(null);
+            }}
             className="font-semibold text-dallas-green hover:text-dallas-green-light transition-colors"
           >
             {isLogin ? "Sign up" : "Sign in"}

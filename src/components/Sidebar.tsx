@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Home,
   BarChart3,
@@ -11,8 +11,11 @@ import {
   X,
   Sparkles,
   LogOut,
+  Loader2,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
+import type { User } from "@supabase/supabase-js";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
@@ -23,11 +26,50 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
+  const supabase = createClient();
+
+  // Fetch user on mount
+  useEffect(() => {
+    if (!supabase) return;
+
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    getUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user ?? null);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, [supabase]);
+
+  const handleSignOut = async () => {
+    if (!supabase) {
+      router.push("/login");
+      return;
+    }
+    setSigningOut(true);
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  };
 
   // Hide sidebar on login/onboarding routes
   const hiddenRoutes = ["/login", "/onboarding"];
   if (hiddenRoutes.some((r) => pathname.startsWith(r))) return null;
+
+  // User info
+  const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User";
+  const userInitial = userName.charAt(0).toUpperCase();
+  const avatarUrl = user?.user_metadata?.avatar_url;
 
   return (
     <>
@@ -76,11 +118,20 @@ export default function Sidebar() {
 
         {/* Profile */}
         <div className="mx-4 mt-6 flex items-center gap-3 rounded-xl bg-background/50 px-4 py-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-dallas-green text-sm font-bold text-white">
-            A
-          </div>
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt={userName}
+              className="h-9 w-9 rounded-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-dallas-green text-sm font-bold text-white">
+              {userInitial}
+            </div>
+          )}
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold">Alex Johnson</p>
+            <p className="truncate text-sm font-semibold">{userName}</p>
             <p className="truncate text-xs text-muted">learner</p>
           </div>
         </div>
@@ -96,18 +147,16 @@ export default function Sidebar() {
                 onClick={() => setMobileOpen(false)}
                 className={`
                   group flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200
-                  ${
-                    isActive
-                      ? "bg-dallas-green/15 text-dallas-green shadow-sm"
-                      : "text-muted hover:bg-surface-hover hover:text-foreground"
+                  ${isActive
+                    ? "bg-dallas-green/15 text-dallas-green shadow-sm"
+                    : "text-muted hover:bg-surface-hover hover:text-foreground"
                   }
                 `}
               >
                 <item.icon
                   size={20}
-                  className={`transition-transform duration-200 group-hover:scale-110 ${
-                    isActive ? "text-dallas-green" : ""
-                  }`}
+                  className={`transition-transform duration-200 group-hover:scale-110 ${isActive ? "text-dallas-green" : ""
+                    }`}
                 />
                 {item.label}
                 {isActive && (
@@ -120,13 +169,18 @@ export default function Sidebar() {
 
         {/* Footer */}
         <div className="border-t border-surface-border p-4">
-          <Link
-            href="/login"
-            className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted hover:bg-surface-hover hover:text-foreground transition-colors"
+          <button
+            onClick={handleSignOut}
+            disabled={signingOut}
+            className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-muted hover:bg-surface-hover hover:text-foreground transition-colors disabled:opacity-60"
           >
-            <LogOut size={18} />
+            {signingOut ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <LogOut size={18} />
+            )}
             Sign Out
-          </Link>
+          </button>
         </div>
       </aside>
     </>

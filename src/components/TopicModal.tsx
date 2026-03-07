@@ -11,7 +11,9 @@ import {
   ArrowRight,
   BookOpen,
   Sparkles,
+  Youtube,
 } from "lucide-react";
+import YouTubeSnippet from "@/components/YouTubeSnippet";
 
 interface TopicModalProps {
   topic: {
@@ -61,13 +63,12 @@ export default function TopicModal({ topic, onClose }: TopicModalProps) {
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span
-                className={`inline-block h-2.5 w-2.5 rounded-full ${
-                  topic.status === "completed"
+                className={`inline-block h-2.5 w-2.5 rounded-full ${topic.status === "completed"
                     ? "bg-dallas-green"
                     : topic.status === "in-progress"
-                    ? "bg-yellow-400"
-                    : "bg-muted-dark"
-                }`}
+                      ? "bg-yellow-400"
+                      : "bg-muted-dark"
+                  }`}
               />
               <span className="text-xs font-medium text-muted capitalize">
                 {topic.status.replace("-", " ")}
@@ -89,17 +90,16 @@ export default function TopicModal({ topic, onClose }: TopicModalProps) {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
-                activeTab === tab
+              className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === tab
                   ? "border-dallas-green text-dallas-green"
                   : "border-transparent text-muted hover:text-foreground"
-              }`}
+                }`}
             >
               {tab === "resources"
                 ? "Resources"
                 : tab === "why"
-                ? "Why This?"
-                : "Up Next"}
+                  ? "Why This?"
+                  : "Up Next"}
             </button>
           ))}
         </div>
@@ -179,6 +179,15 @@ export default function TopicModal({ topic, onClose }: TopicModalProps) {
                     Generate Slides
                   </button>
                 </div>
+              </div>
+
+              {/* Featured YouTube Video */}
+              <div>
+                <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+                  <Youtube size={16} className="text-red-400" />
+                  Featured Video
+                </h3>
+                <YouTubeSnippet topic={topic.title} />
               </div>
             </div>
           )}
