@@ -119,6 +119,7 @@ export default function Sidebar() {
         {/* Profile */}
         <div className="mx-4 mt-6 flex items-center gap-3 rounded-xl bg-background/50 px-4 py-3">
           {avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={avatarUrl}
               alt={userName}

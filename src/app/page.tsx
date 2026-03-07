@@ -194,8 +194,10 @@ function TypewriterText({ texts }: { texts: string[] }) {
     } else if (deleting && displayed.length > 0) {
       timeout = setTimeout(() => setDisplayed(displayed.slice(0, -1)), 28);
     } else if (deleting && displayed.length === 0) {
-      setDeleting(false);
-      setIdx((i) => (i + 1) % texts.length);
+      timeout = setTimeout(() => {
+        setDeleting(false);
+        setIdx((i) => (i + 1) % texts.length);
+      }, 50);
     }
 
     return () => clearTimeout(timeout);
@@ -350,7 +352,7 @@ export default function LandingPage() {
                     <Star key={s} size={13} className="text-yellow-400 fill-yellow-400" />
                   ))}
                 </div>
-                <p className="text-sm text-muted leading-relaxed mb-5">"{t.quote}"</p>
+                <p className="text-sm text-muted leading-relaxed mb-5">&quot;{t.quote}&quot;</p>
                 <div className="flex items-center gap-3">
                   <div className={`flex h-9 w-9 items-center justify-center rounded-full ${t.color} text-xs font-bold text-white`}>
                     {t.initials}

@@ -22,7 +22,7 @@ const majors = [
 ];
 
 const INITIAL_MAJOR = "Computer Science";
-const INITIAL_RESUME = "resume_2024.pdf";
+const INITIAL_RESUME = null;
 
 export default function SettingsPage() {
   const [selectedMajor, setSelectedMajor] = useState(INITIAL_MAJOR);
@@ -128,9 +128,8 @@ export default function SettingsPage() {
                       <button
                         key={major}
                         onClick={() => { setSelectedMajor(major); setDropdownOpen(false); setSearch(""); }}
-                        className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-surface-hover flex items-center gap-2 ${
-                          major === selectedMajor ? "text-dallas-green bg-dallas-green/8" : "text-foreground"
-                        }`}
+                        className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-surface-hover flex items-center gap-2 ${major === selectedMajor ? "text-dallas-green bg-dallas-green/8" : "text-foreground"
+                          }`}
                       >
                         {major === selectedMajor && <CheckCircle2 size={13} />}
                         {major !== selectedMajor && <span className="w-4" />}
@@ -161,13 +160,12 @@ export default function SettingsPage() {
             onDragLeave={() => setDragOver(false)}
             onDrop={handleFileDrop}
             onClick={() => fileRef.current?.click()}
-            className={`relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-10 cursor-pointer transition-all duration-300 ${
-              dragOver
+            className={`relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-10 cursor-pointer transition-all duration-300 ${dragOver
                 ? "border-dallas-green bg-dallas-green/5 scale-[1.01]"
                 : resumeFile
-                ? "border-dallas-green/50 bg-dallas-green/5"
-                : "border-surface-border hover:border-muted-dark hover:bg-surface-hover/30"
-            }`}
+                  ? "border-dallas-green/50 bg-dallas-green/5"
+                  : "border-surface-border hover:border-muted-dark hover:bg-surface-hover/30"
+              }`}
           >
             <input
               ref={fileRef}
@@ -219,14 +217,14 @@ export default function SettingsPage() {
                 saveState === "saved"
                   ? "linear-gradient(135deg, #46b533, #3a9a2b)"
                   : !isDirty && saveState === "idle"
-                  ? "#52525b"
-                  : "linear-gradient(135deg, #7c3aed, #6d28d9)",
+                    ? "#52525b"
+                    : "linear-gradient(135deg, #7c3aed, #6d28d9)",
               boxShadow:
                 saveState === "saved"
                   ? "0 4px 20px rgba(70,181,51,0.35)"
                   : !isDirty && saveState === "idle"
-                  ? "none"
-                  : "0 4px 20px rgba(124,58,237,0.35)",
+                    ? "none"
+                    : "0 4px 20px rgba(124,58,237,0.35)",
               opacity: !isDirty && saveState === "idle" ? 0.5 : 1,
             }}
           >

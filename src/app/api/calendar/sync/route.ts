@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     try {
         const body = await request.json();
-        const eventsToSync: any[] = body.events || [];
+        const eventsToSync: { title: string; year: number; month: number; day: number }[] = body.events || [];
 
         // 2. Find or Create the "Luminary" calendar
         let luminaryCalId = null;
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
         if (!listRes.ok) throw new Error("Failed to fetch calendar list");
 
         const listData = await listRes.json();
-        const luminaryCal = listData.items?.find((cal: any) => cal.summary === "Luminary");
+        const luminaryCal = listData.items?.find((cal: Record<string, unknown>) => cal.summary === "Luminary");
 
         if (luminaryCal) {
             luminaryCalId = luminaryCal.id;
@@ -52,15 +52,15 @@ export async function POST(request: NextRequest) {
         }
 
         // 3. Clear existing events from the Luminary calendar (optional, but good for "overwrite")
-        const eventsRes = await fetch(`${CALENDAR_API_BASE}/calendars/${encodeURIComponent(luminaryCalId)}/events`, { headers: authHeaders });
+        const eventsRes = await fetch(`${CALENDAR_API_BASE}/calendars/${encodeURIComponent(luminaryCalId as string)}/events`, { headers: authHeaders });
         if (eventsRes.ok) {
             const eventsData = await eventsRes.json();
             const existingEvents = eventsData.items || [];
 
             // Delete them all (in parallel for speed)
             await Promise.all(
-                existingEvents.map((ev: any) =>
-                    fetch(`${CALENDAR_API_BASE}/calendars/${encodeURIComponent(luminaryCalId)}/events/${ev.id}`, {
+                existingEvents.map((ev: Record<string, unknown>) =>
+                    fetch(`${CALENDAR_API_BASE}/calendars/${encodeURIComponent(luminaryCalId as string)}/events/${ev.id}`, {
                         method: "DELETE",
                         headers: authHeaders,
                     })
@@ -69,8 +69,8 @@ export async function POST(request: NextRequest) {
         }
 
         // 4. Insert new events
-        const insertPromises = eventsToSync.map((event) => {
-            return fetch(`${CALENDAR_API_BASE}/calendars/${encodeURIComponent(luminaryCalId!)}/events`, {
+        const insertPromises = eventsToSync.map((event: { title: string; year: number; month: number; day: number }) => {
+            return fetch(`${CALENDAR_API_BASE}/calendars/${encodeURIComponent(luminaryCalId as string)}/events`, {
                 method: "POST",
                 headers: authHeaders,
                 body: JSON.stringify({
@@ -92,10 +92,10 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({ success: true, message: "Calendar synced successfully" });
 
-    } catch (err: any) {
+    } catch (err: unknown) {
         console.error("Calendar Sync error:", err);
         return NextResponse.json(
-            { error: err.message || "Failed to sync calendar" },
+            { error: err instanceof Error ? err.message : "Failed to sync calendar" },
             { status: 500 }
         );
     }
