@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Home,
   BarChart3,
@@ -19,7 +19,7 @@ import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
 const navItems = [
-  { href: "/", label: "Home", icon: Home },
+  { href: "/dashboard", label: "Home", icon: Home },
   { href: "/progress", label: "Progress", icon: BarChart3 },
   { href: "/roadmap", label: "Roadmap", icon: Map },
   { href: "/calendar", label: "Calendar", icon: CalendarDays },
@@ -28,7 +28,6 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [signingOut, setSigningOut] = useState(false);
@@ -55,18 +54,17 @@ export default function Sidebar() {
 
   const handleSignOut = async () => {
     if (!supabase) {
-      router.push("/login");
+      window.location.href = "/login";
       return;
     }
     setSigningOut(true);
     await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
+    window.location.href = "/login";
   };
 
-  // Hide sidebar on login/onboarding routes
+  // Hide sidebar on public/auth routes
   const hiddenRoutes = ["/login", "/onboarding"];
-  if (hiddenRoutes.some((r) => pathname.startsWith(r))) return null;
+  if (pathname === "/" || hiddenRoutes.some((r) => pathname.startsWith(r))) return null;
 
   // User info
   const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User";

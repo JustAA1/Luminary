@@ -68,7 +68,7 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/");
+      router.push("/dashboard");
       router.refresh();
     } else {
       const { error } = await supabase.auth.signUp({
@@ -91,7 +91,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-12">
+    <div className="flex min-h-screen w-full flex-1 items-center justify-center px-4 py-12">
       {/* Radial glow */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full bg-dallas-green/8 blur-[140px]" />

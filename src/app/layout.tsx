@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/Sidebar";
+import MainWrapper from "@/components/MainWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,13 +31,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} antialiased bg-background text-foreground`}
+        suppressHydrationWarning
       >
         <div className="flex h-screen overflow-hidden">
           <Sidebar />
-          <main className="flex-1 ml-0 md:ml-64 h-screen overflow-y-auto">{children}</main>
+          <MainWrapper>{children}</MainWrapper>
         </div>
       </body>
     </html>

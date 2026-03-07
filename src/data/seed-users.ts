@@ -1,0 +1,215 @@
+import type { SeedUser } from "@/types/seed";
+
+/**
+ * 2–3 sample users who completed onboarding, with past homework (coursework) data.
+ * Use for development, demos, or seeding the database.
+ */
+export const seedUsers: SeedUser[] = [
+  {
+    id: "seed-user-alex",
+    email: "alex.rivera@example.com",
+    fullName: "Alex Rivera",
+    onboardingCompletedAt: "2026-02-15T10:00:00.000Z",
+    onboarding: {
+      skills: {
+        programming: 4,
+        math: 3,
+        "data-science": 3,
+        design: 2,
+        ml: 2,
+        "web-dev": 4,
+      },
+      hobbies: ["Web Development", "Artificial Intelligence", "Open Source"],
+      hoursPerWeek: 12,
+      resumeUploaded: true,
+    },
+    pastCourses: [
+      {
+        id: 1,
+        title: "Introduction to Python",
+        category: "Programming",
+        progress: 100,
+        hours: 24,
+        rating: 4.8,
+        color: "from-blue-500/20 to-blue-600/5",
+      },
+      {
+        id: 2,
+        title: "Linear Algebra Fundamentals",
+        category: "Mathematics",
+        progress: 85,
+        hours: 18,
+        rating: 4.5,
+        color: "from-purple-500/20 to-purple-600/5",
+      },
+      {
+        id: 3,
+        title: "HTML & CSS Mastery",
+        category: "Web Development",
+        progress: 100,
+        hours: 16,
+        rating: 4.9,
+        color: "from-orange-500/20 to-orange-600/5",
+      },
+      {
+        id: 4,
+        title: "Statistics for Data Science",
+        category: "Data Science",
+        progress: 62,
+        hours: 12,
+        rating: 4.3,
+        color: "from-emerald-500/20 to-emerald-600/5",
+      },
+      {
+        id: 5,
+        title: "JavaScript Essentials",
+        category: "Programming",
+        progress: 45,
+        hours: 8,
+        rating: 4.7,
+        color: "from-yellow-500/20 to-yellow-600/5",
+      },
+      {
+        id: 6,
+        title: "React Fundamentals",
+        category: "Web Development",
+        progress: 30,
+        hours: 6,
+        rating: 4.6,
+        color: "from-cyan-500/20 to-cyan-600/5",
+      },
+    ],
+  },
+  {
+    id: "seed-user-jordan",
+    email: "jordan.chen@example.com",
+    fullName: "Jordan Chen",
+    onboardingCompletedAt: "2026-02-20T14:30:00.000Z",
+    onboarding: {
+      skills: {
+        programming: 3,
+        math: 5,
+        "data-science": 4,
+        design: 1,
+        ml: 3,
+        "web-dev": 2,
+      },
+      hobbies: ["Data Visualization", "Machine Learning", "Robotics"],
+      hoursPerWeek: 8,
+      resumeUploaded: true,
+    },
+    pastCourses: [
+      {
+        id: 1,
+        title: "Calculus I & II",
+        category: "Mathematics",
+        progress: 100,
+        hours: 40,
+        rating: 4.6,
+        color: "from-purple-500/20 to-purple-600/5",
+      },
+      {
+        id: 2,
+        title: "Introduction to Python",
+        category: "Programming",
+        progress: 100,
+        hours: 24,
+        rating: 4.8,
+        color: "from-blue-500/20 to-blue-600/5",
+      },
+      {
+        id: 3,
+        title: "Probability and Statistics",
+        category: "Mathematics",
+        progress: 100,
+        hours: 20,
+        rating: 4.7,
+        color: "from-indigo-500/20 to-indigo-600/5",
+      },
+      {
+        id: 4,
+        title: "Pandas & Data Wrangling",
+        category: "Data Science",
+        progress: 75,
+        hours: 14,
+        rating: 4.4,
+        color: "from-emerald-500/20 to-emerald-600/5",
+      },
+      {
+        id: 5,
+        title: "Intro to Machine Learning",
+        category: "Machine Learning",
+        progress: 40,
+        hours: 10,
+        rating: 4.5,
+        color: "from-rose-500/20 to-rose-600/5",
+      },
+    ],
+  },
+  {
+    id: "seed-user-sam",
+    email: "sam.williams@example.com",
+    fullName: "Sam Williams",
+    onboardingCompletedAt: "2026-03-01T09:15:00.000Z",
+    onboarding: {
+      skills: {
+        programming: 2,
+        math: 2,
+        "data-science": 1,
+        design: 4,
+        ml: 1,
+        "web-dev": 3,
+      },
+      hobbies: ["UI/UX Design", "Creative Writing", "Photography"],
+      hoursPerWeek: 10,
+      resumeUploaded: false,
+    },
+    pastCourses: [
+      {
+        id: 1,
+        title: "Figma for Designers",
+        category: "UI/UX Design",
+        progress: 100,
+        hours: 12,
+        rating: 4.9,
+        color: "from-pink-500/20 to-pink-600/5",
+      },
+      {
+        id: 2,
+        title: "HTML & CSS Mastery",
+        category: "Web Development",
+        progress: 90,
+        hours: 16,
+        rating: 4.7,
+        color: "from-orange-500/20 to-orange-600/5",
+      },
+      {
+        id: 3,
+        title: "Introduction to Python",
+        category: "Programming",
+        progress: 55,
+        hours: 14,
+        rating: 4.4,
+        color: "from-blue-500/20 to-blue-600/5",
+      },
+      {
+        id: 4,
+        title: "JavaScript Essentials",
+        category: "Programming",
+        progress: 25,
+        hours: 6,
+        rating: 4.2,
+        color: "from-yellow-500/20 to-yellow-600/5",
+      },
+    ],
+  },
+];
+
+/** Get a seed user by id or email (for dev/demo). */
+export function getSeedUserById(id: string): SeedUser | undefined {
+  return seedUsers.find((u) => u.id === id);
+}
+
+export function getSeedUserByEmail(email: string): SeedUser | undefined {
+  return seedUsers.find((u) => u.email.toLowerCase() === email.toLowerCase());
+}
