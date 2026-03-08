@@ -1,16 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import PptxGenJS from "pptxgenjs";
 
-const MODEL = "gemini-2.5-flash";
+export const maxDuration = 60;
 
-interface Slide {
+const PPTX_API_URL =
+  "https://auth.powerpointgeneratorapi.com/v1.0/generator/create";
+
+const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
+
+interface SlideContent {
   title: string;
   bullets: string[];
-  notes: string;
 }
 
-const PROMPT = (topic: string, description: string) =>
+const SLIDE_PROMPT = (topic: string, description: string) =>
   `You are an expert educator creating a concise PowerPoint presentation about "${topic}".
 ${description ? `Context: ${description}` : ""}
 
@@ -18,7 +23,7 @@ Generate exactly 8 slides. Output ONLY valid JSON — no markdown, no code fence
 
 Format:
 [
-  {"title": "slide title", "bullets": ["point 1", "point 2", "point 3", "point 4"], "notes": "speaker notes"},
+  {"title": "slide title", "bullets": ["point 1", "point 2", "point 3", "point 4"]},
   ...
 ]
 
@@ -27,8 +32,70 @@ Rules:
 - Slides 2-7: Core content, 3-5 bullets each, educational and specific
 - Slide 8: Summary / Key Takeaways with 3-4 bullets
 - Each bullet should be concise (under 15 words)
-- Notes should be 1-2 sentences expanding on the slide
 - Output ONLY the JSON array`;
+
+// ── LLM content generation ──────────────────────────────────────────
+
+async function callGemini(prompt: string, apiKey: string): Promise<string> {
+  const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.4, maxOutputTokens: 2000 },
+    }),
+  });
+  if (!res.ok) throw new Error(`Gemini ${res.status}`);
+  const data = await res.json();
+  return (data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "").trim();
+}
+
+async function callOpenAI(prompt: string, apiKey: string): Promise<string> {
+  const res = await fetch(OPENAI_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.4,
+      max_tokens: 2000,
+    }),
+  });
+  if (!res.ok) throw new Error(`OpenAI ${res.status}`);
+  const data = await res.json();
+  return (data?.choices?.[0]?.message?.content ?? "").trim();
+}
+
+async function generateSlideContent(
+  topic: string,
+  description: string,
+): Promise<SlideContent[]> {
+  const prompt = SLIDE_PROMPT(topic, description);
+
+  const geminiKey = process.env.GEMINI_API_KEY;
+  const openaiKey = process.env.OPENAI_API_KEY;
+
+  let raw: string;
+  if (geminiKey) {
+    raw = await callGemini(prompt, geminiKey);
+  } else if (openaiKey) {
+    raw = await callOpenAI(prompt, openaiKey);
+  } else {
+    throw new Error("No AI API key configured (GEMINI_API_KEY or OPENAI_API_KEY)");
+  }
+
+  const jsonStr = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  const slides: SlideContent[] = JSON.parse(jsonStr);
+  if (!Array.isArray(slides) || slides.length === 0) {
+    throw new Error("Invalid slide data from AI");
+  }
+  return slides;
+}
+
+// ── pptxgenjs direct build (primary + fallback) ─────────────────────
 
 const COLORS = {
   bg: "0F172A",
@@ -36,10 +103,9 @@ const COLORS = {
   text: "E2E8F0",
   accent: "3B82F6",
   muted: "94A3B8",
-  darkBg: "1E293B",
 };
 
-function buildPptx(slides: Slide[], topic: string): PptxGenJS {
+function buildPptxDirect(slides: SlideContent[], topic: string): PptxGenJS {
   const pptx = new PptxGenJS();
   pptx.author = "Luminary AI";
   pptx.title = topic;
@@ -50,14 +116,12 @@ function buildPptx(slides: Slide[], topic: string): PptxGenJS {
     const s = pptx.addSlide();
     s.background = { color: COLORS.bg };
 
-    // Green accent bar at top
     s.addShape(pptx.ShapeType.rect, {
       x: 0, y: 0, w: "100%", h: 0.06,
       fill: { color: COLORS.title },
     });
 
     if (idx === 0) {
-      // Title slide
       s.addText(slide.title, {
         x: 0.8, y: 1.8, w: "85%", h: 1.5,
         fontSize: 36, fontFace: "Arial",
@@ -74,14 +138,11 @@ function buildPptx(slides: Slide[], topic: string): PptxGenJS {
         color: COLORS.muted, italic: true,
       });
     } else {
-      // Content slide
       s.addText(slide.title, {
         x: 0.8, y: 0.4, w: "85%", h: 0.8,
         fontSize: 26, fontFace: "Arial",
         color: COLORS.title, bold: true,
       });
-
-      // Separator line
       s.addShape(pptx.ShapeType.rect, {
         x: 0.8, y: 1.25, w: 2.5, h: 0.03,
         fill: { color: COLORS.accent },
@@ -105,7 +166,6 @@ function buildPptx(slides: Slide[], topic: string): PptxGenJS {
         lineSpacingMultiple: 1.5,
       });
 
-      // Slide number
       s.addText(`${idx + 1} / ${slides.length}`, {
         x: "90%", y: "93%", w: 1, h: 0.3,
         fontSize: 9, fontFace: "Arial",
@@ -113,20 +173,141 @@ function buildPptx(slides: Slide[], topic: string): PptxGenJS {
       });
     }
 
-    if (slide.notes) {
-      s.addNotes(slide.notes);
+    if (slide.bullets.length > 0) {
+      s.addNotes(slide.bullets.join("\n"));
     }
   });
 
   return pptx;
 }
 
-export async function POST(request: NextRequest) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: "GEMINI_API_KEY is not configured." }, { status: 500 });
+// ── PowerPoint Generator API (attempted first) ─────────────────────
+
+const TEMPLATE_NAME = "luminary_template.pptx";
+
+async function createTemplate(slideCount: number): Promise<Buffer> {
+  const pptx = new PptxGenJS();
+  pptx.author = "Luminary AI";
+  pptx.layout = "LAYOUT_WIDE";
+
+  for (let i = 0; i < slideCount; i++) {
+    const s = pptx.addSlide();
+    s.background = { color: COLORS.bg };
+
+    s.addShape(pptx.ShapeType.rect, {
+      x: 0, y: 0, w: "100%", h: 0.06,
+      fill: { color: COLORS.title },
+    });
+
+    if (i === 0) {
+      s.addText(" ", {
+        x: 0.8, y: 1.8, w: "85%", h: 1.5,
+        fontSize: 36, fontFace: "Arial",
+        color: COLORS.text, bold: true,
+        objectName: "Title 1",
+      });
+      s.addText(" ", {
+        x: 0.8, y: 3.5, w: "85%", h: 1.5,
+        fontSize: 18, fontFace: "Arial",
+        color: COLORS.muted,
+        lineSpacingMultiple: 1.4,
+        objectName: "Subtitle 2",
+      });
+      s.addText("Generated by Luminary AI", {
+        x: 0.8, y: 6.2, w: "85%", h: 0.4,
+        fontSize: 11, fontFace: "Arial",
+        color: COLORS.muted, italic: true,
+      });
+    } else {
+      s.addText(" ", {
+        x: 0.8, y: 0.4, w: "85%", h: 0.8,
+        fontSize: 26, fontFace: "Arial",
+        color: COLORS.title, bold: true,
+        objectName: "Title 1",
+      });
+      s.addShape(pptx.ShapeType.rect, {
+        x: 0.8, y: 1.25, w: 2.5, h: 0.03,
+        fill: { color: COLORS.accent },
+      });
+      s.addText(" ", {
+        x: 0.8, y: 1.5, w: "85%", h: 4.5,
+        fontSize: 17, fontFace: "Arial",
+        color: COLORS.text,
+        lineSpacingMultiple: 1.5,
+        valign: "top",
+        objectName: "Content 2",
+      });
+      s.addText(`${i + 1} / ${slideCount}`, {
+        x: "90%", y: "93%", w: 1, h: 0.3,
+        fontSize: 9, fontFace: "Arial",
+        color: COLORS.muted, align: "right",
+      });
+    }
   }
 
+  return (await pptx.write({ outputType: "nodebuffer" })) as Buffer;
+}
+
+function buildJsonData(slides: SlideContent[]): string {
+  return JSON.stringify({
+    presentation: {
+      template: TEMPLATE_NAME,
+      export_version: "Pptx2010",
+      slides: slides.map((slide, i) => ({
+        type: "slide",
+        slide_index: i,
+        shapes: [
+          {
+            name: "Title 1",
+            content: slide.title,
+          },
+          {
+            name: i === 0 ? "Subtitle 2" : "Content 2",
+            content:
+              i === 0
+                ? slide.bullets.join("\n")
+                : slide.bullets.map((b) => `• ${b}`).join("\n"),
+          },
+        ],
+      })),
+    },
+  });
+}
+
+async function callPptxApi(
+  templateBuffer: Buffer,
+  slides: SlideContent[],
+  slidesApiKey: string,
+): Promise<Buffer> {
+  const formData = new FormData();
+
+  const blob = new Blob([templateBuffer], {
+    type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  });
+  formData.append("files", blob, TEMPLATE_NAME);
+  formData.append("jsonData", buildJsonData(slides));
+
+  const res = await fetch(PPTX_API_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${slidesApiKey}`,
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => "");
+    throw new Error(
+      `PowerPoint Generator API error ${res.status}: ${errText.slice(0, 300)}`,
+    );
+  }
+
+  return Buffer.from(await res.arrayBuffer());
+}
+
+// ── Route handler ───────────────────────────────────────────────────
+
+export async function POST(request: NextRequest) {
   let topic: string;
   let description: string;
   try {
@@ -139,37 +320,41 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({
-      model: MODEL,
-      generationConfig: { temperature: 0.4, maxOutputTokens: 2000 },
-    });
+    const slides = await generateSlideContent(topic, description);
 
-    const result = await model.generateContent(PROMPT(topic, description));
-    const raw = result.response.text().trim();
-    const jsonStr = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
-    const slides: Slide[] = JSON.parse(jsonStr);
+    let pptxBuffer: Buffer;
+    const slidesApiKey = process.env.SLIDES_API_KEY;
 
-    if (!Array.isArray(slides) || slides.length === 0) {
-      throw new Error("Invalid slide data from Gemini");
+    if (slidesApiKey) {
+      try {
+        const templateBuffer = await createTemplate(slides.length);
+        pptxBuffer = await callPptxApi(templateBuffer, slides, slidesApiKey);
+      } catch (apiErr) {
+        console.warn("PowerPoint Generator API failed, using local fallback:", (apiErr as Error).message);
+        const pptx = buildPptxDirect(slides, topic);
+        pptxBuffer = (await pptx.write({ outputType: "nodebuffer" })) as Buffer;
+      }
+    } else {
+      const pptx = buildPptxDirect(slides, topic);
+      pptxBuffer = (await pptx.write({ outputType: "nodebuffer" })) as Buffer;
     }
 
-    const pptx = buildPptx(slides, topic);
-    const buffer = await pptx.write({ outputType: "nodebuffer" }) as Buffer;
-    const bytes = new Uint8Array(buffer);
-
-    return new NextResponse(bytes, {
+    return new NextResponse(new Uint8Array(pptxBuffer), {
       status: 200,
       headers: {
-        "Content-Type": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "Content-Type":
+          "application/vnd.openxmlformats-officedocument.presentationml.presentation",
         "Content-Disposition": `attachment; filename="${topic.replace(/[^a-zA-Z0-9 ]/g, "").replace(/\s+/g, "_")}_slides.pptx"`,
-        "Content-Length": String(bytes.length),
+        "Content-Length": String(pptxBuffer.length),
       },
     });
   } catch (err) {
     console.error("Slides API error:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Failed to generate slides" },
+      {
+        error:
+          err instanceof Error ? err.message : "Failed to generate slides",
+      },
       { status: 502 },
     );
   }
