@@ -477,7 +477,7 @@ export default function TopicModal({ topic, onClose, onNavigate, suggestions, yo
                         const style = LABEL_STYLE[lbl] ?? LABEL_STYLE["Article"];
                         return (
                           <div key={i} className="flex items-center gap-3 rounded-xl border border-surface-border bg-background/30 p-4 animate-pulse">
-                            <div className="flex-shrink-0 opacity-40">{style.icon}</div>
+                            <div className="shrink-0 opacity-40">{style.icon}</div>
                             <div className="flex-1 space-y-2">
                               <div className="h-3 w-2/3 rounded bg-surface-border" />
                               <div className="h-2 w-1/2 rounded bg-surface-border" />
@@ -496,7 +496,7 @@ export default function TopicModal({ topic, onClose, onNavigate, suggestions, yo
                             rel="noopener noreferrer"
                             className="group flex items-start gap-3 rounded-xl border border-surface-border bg-background/30 p-4 hover:border-dallas-green/40 hover:bg-surface-hover/50 transition-colors"
                           >
-                            <div className="flex-shrink-0 mt-0.5">{style.icon}</div>
+                            <div className="shrink-0 mt-0.5">{style.icon}</div>
                             <div className="min-w-0 flex-1">
                               <p className="text-sm font-medium group-hover:text-dallas-green transition-colors leading-snug">
                                 {r.title}
@@ -507,7 +507,7 @@ export default function TopicModal({ topic, onClose, onNavigate, suggestions, yo
                                 </p>
                               )}
                             </div>
-                            <div className="flex flex-col items-end gap-1.5 flex-shrink-0 ml-2">
+                            <div className="flex flex-col items-end gap-1.5 shrink-0 ml-2">
                               <ExternalLink size={12} className="text-muted-dark" />
                               <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${style.badge}`}>
                                 {r.label}
@@ -530,7 +530,7 @@ export default function TopicModal({ topic, onClose, onNavigate, suggestions, yo
                   <div className="space-y-2">
                     {Array.from({ length: 4 }).map((_, i) => (
                       <div key={i} className="flex items-center gap-3 rounded-xl border border-surface-border bg-background/30 p-4 animate-pulse">
-                        <div className="h-4 w-4 rounded bg-surface-border flex-shrink-0" />
+                        <div className="h-4 w-4 rounded bg-surface-border shrink-0" />
                         <div className="flex-1 space-y-2">
                           <div className="h-3 w-3/4 rounded bg-surface-border" />
                           <div className="h-2 w-1/2 rounded bg-surface-border" />
@@ -550,7 +550,7 @@ export default function TopicModal({ topic, onClose, onNavigate, suggestions, yo
                           rel="noopener noreferrer"
                           className="group flex items-start gap-3 rounded-xl border border-surface-border bg-background/30 p-4 hover:border-cyan-500/40 hover:bg-surface-hover/50 transition-colors"
                         >
-                          <div className="flex-shrink-0 mt-0.5">{style.icon}</div>
+                          <div className="shrink-0 mt-0.5">{style.icon}</div>
                           <div className="min-w-0 flex-1">
                             <p className="text-sm font-medium group-hover:text-cyan-400 transition-colors leading-snug">
                               {r.title}
@@ -561,7 +561,7 @@ export default function TopicModal({ topic, onClose, onNavigate, suggestions, yo
                               </p>
                             )}
                           </div>
-                          <div className="flex flex-col items-end gap-1.5 flex-shrink-0 ml-2">
+                          <div className="flex flex-col items-end gap-1.5 shrink-0 ml-2">
                             <ExternalLink size={12} className="text-muted-dark" />
                             <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${style.badge}`}>
                               {r.source}

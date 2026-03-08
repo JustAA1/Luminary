@@ -42,8 +42,8 @@ async function scrapeWikipedia(topic: string): Promise<ScrapedResource[]> {
   );
   if (!res) return [];
   const data = await res.json();
-  const items: unknown[] = data?.query?.search ?? [];
-  return items.map((item: Record<string, string>) => ({
+  const items: any[] = data?.query?.search ?? [];
+  return items.map((item: any) => ({
     title: item.title,
     description: cheerio.load(item.snippet ?? "").text(),
     url: `https://en.wikipedia.org/wiki/${encodeURIComponent(item.title.replace(/ /g, "_"))}`,
@@ -63,7 +63,7 @@ async function scrapeArxiv(topic: string): Promise<ScrapedResource[]> {
   const xml = await res.text();
   const $ = cheerio.load(xml, { xmlMode: true });
   const results: ScrapedResource[] = [];
-  $("entry").each((_, el) => {
+  $("entry").each((_: any, el: any) => {
     const title = $(el).find("title").text().trim().replace(/\s+/g, " ");
     const summary = $(el)
       .find("summary")

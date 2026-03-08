@@ -66,18 +66,18 @@ async function fetchGeminiResources(
 
   return text
     .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line.includes("|"))
+    .map((line: string) => line.trim())
+    .filter((line: string) => line.includes("|"))
     .slice(0, 6)
-    .map((line) => {
-      const parts = line.split("|").map((p) => p.trim());
+    .map((line: string) => {
+      const parts = line.split("|").map((p: string) => p.trim());
       const rawLabel = parts[0].replace(/^[-\d.\s]+/, "").toUpperCase();
       const label: Resource["label"] = LABEL_MAP[rawLabel] ?? "Article";
       const title = parts[1] ?? topic;
       const description = parts[2] ?? "";
       return { title, description, label, searchUrl: searchUrl(label, title, topic) };
     })
-    .filter((r) => r.title);
+    .filter((r: { title: string }) => r.title);
 }
 
 export async function POST(request: NextRequest) {
