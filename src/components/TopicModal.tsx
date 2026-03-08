@@ -47,6 +47,13 @@ interface UpNextItem {
   topicId: string;
 }
 
+interface RoadmapTopicBasic {
+  id: string;
+  title: string;
+  status: "completed" | "in-progress" | "upcoming";
+  recommendation_score?: number;
+}
+
 interface TopicModalProps {
   topic: {
     id: string;
@@ -61,12 +68,11 @@ interface TopicModalProps {
   } | null;
   onClose: () => void;
   onNavigate?: (topicId: string) => void;
-  /** From RIQE/Gemini: refined next steps and resources for this topic */
   suggestions?: string[];
-  /** From RIQE/Gemini: YouTube search phrases for this topic */
   youtubeQueries?: string[];
-  /** From Gemini: personalized explanation of why this topic matters */
   whyThis?: string;
+  /** All roadmap topics — used to dynamically compute "Up Next" */
+  allTopics?: RoadmapTopicBasic[];
 }
 
 const youtubeResources = [
@@ -94,178 +100,24 @@ const SOURCE_STYLE: Record<string, { icon: React.ReactNode; badge: string }> = {
   "GitHub":      { icon: <GitBranch size={14} className="text-gray-300" />,    badge: "bg-gray-500/10 text-gray-300" },
 };
 
-// ── Per-topic "Up Next" suggestions ──────────────────────────────────────────
-// Keys match the real roadmap IDs in roadmap/page.tsx so handleNavigate works.
-const upNextMap: Record<string, UpNextItem[]> = {
-  // Programming Fundamentals + its subtopics → suggest web basics topics
-  fundamentals: [
-    { title: "HTML5 & Semantic Markup", status: "upcoming", match: 96, topicId: "html" },
-    { title: "CSS3 & Responsive Design", status: "upcoming", match: 91, topicId: "css" },
-    { title: "JavaScript & DOM", status: "upcoming", match: 88, topicId: "js-dom" },
-  ],
-  variables: [
-    { title: "Control Flow", status: "completed", match: 98, topicId: "control-flow" },
-    { title: "Functions & Modules", status: "completed", match: 94, topicId: "functions" },
-    { title: "Web Development Basics", status: "completed", match: 85, topicId: "web-basics" },
-  ],
-  "control-flow": [
-    { title: "Functions & Modules", status: "completed", match: 97, topicId: "functions" },
-    { title: "Object-Oriented Programming", status: "completed", match: 92, topicId: "oop" },
-    { title: "HTML5 & Semantic Markup", status: "upcoming", match: 83, topicId: "html" },
-  ],
-  functions: [
-    { title: "Object-Oriented Programming", status: "completed", match: 96, topicId: "oop" },
-    { title: "Web Development Basics", status: "completed", match: 90, topicId: "web-basics" },
-    { title: "React Components & JSX", status: "completed", match: 82, topicId: "react-basics" },
-  ],
-  oop: [
-    { title: "Web Development Basics", status: "completed", match: 94, topicId: "web-basics" },
-    { title: "State Management", status: "in-progress", match: 88, topicId: "state" },
-    { title: "Data Science Foundations", status: "upcoming", match: 80, topicId: "data-science" },
-  ],
+function computeUpNext(
+  currentId: string,
+  allTopics: RoadmapTopicBasic[],
+): UpNextItem[] {
+  if (allTopics.length === 0) return [];
 
-  // Web Basics + its subtopics → suggest frontend framework topics
-  "web-basics": [
-    { title: "React Components & JSX", status: "completed", match: 97, topicId: "react-basics" },
-    { title: "State Management", status: "in-progress", match: 92, topicId: "state" },
-    { title: "Client-side Routing", status: "upcoming", match: 87, topicId: "routing" },
-  ],
-  html: [
-    { title: "CSS3 & Responsive Design", status: "completed", match: 99, topicId: "css" },
-    { title: "JavaScript & DOM", status: "completed", match: 93, topicId: "js-dom" },
-    { title: "React Components & JSX", status: "completed", match: 87, topicId: "react-basics" },
-  ],
-  css: [
-    { title: "JavaScript & DOM", status: "completed", match: 96, topicId: "js-dom" },
-    { title: "Web Accessibility", status: "completed", match: 90, topicId: "accessibility" },
-    { title: "Custom Hooks & Patterns", status: "upcoming", match: 81, topicId: "hooks" },
-  ],
-  "js-dom": [
-    { title: "React Components & JSX", status: "completed", match: 98, topicId: "react-basics" },
-    { title: "State Management", status: "in-progress", match: 93, topicId: "state" },
-    { title: "Client-side Routing", status: "upcoming", match: 85, topicId: "routing" },
-  ],
-  accessibility: [
-    { title: "Frontend Frameworks", status: "in-progress", match: 89, topicId: "frontend-frameworks" },
-    { title: "Custom Hooks & Patterns", status: "upcoming", match: 84, topicId: "hooks" },
-    { title: "Data Visualization", status: "upcoming", match: 72, topicId: "visualization" },
-  ],
+  const idx = allTopics.findIndex((t) => t.id === currentId);
+  const remaining = idx >= 0
+    ? allTopics.slice(idx + 1).filter((t) => t.status !== "completed")
+    : allTopics.filter((t) => t.id !== currentId && t.status !== "completed");
 
-  // Frontend Frameworks + its subtopics → suggest data science topics
-  "frontend-frameworks": [
-    { title: "NumPy & Array Computing", status: "upcoming", match: 88, topicId: "numpy" },
-    { title: "Data Science Foundations", status: "upcoming", match: 83, topicId: "data-science" },
-    { title: "Feature Engineering", status: "upcoming", match: 76, topicId: "feature-eng" },
-  ],
-  "react-basics": [
-    { title: "State Management", status: "in-progress", match: 98, topicId: "state" },
-    { title: "Client-side Routing", status: "upcoming", match: 91, topicId: "routing" },
-    { title: "Custom Hooks & Patterns", status: "upcoming", match: 86, topicId: "hooks" },
-  ],
-  state: [
-    { title: "Client-side Routing", status: "upcoming", match: 95, topicId: "routing" },
-    { title: "Custom Hooks & Patterns", status: "upcoming", match: 89, topicId: "hooks" },
-    { title: "Data Science Foundations", status: "upcoming", match: 78, topicId: "data-science" },
-  ],
-  routing: [
-    { title: "Custom Hooks & Patterns", status: "upcoming", match: 97, topicId: "hooks" },
-    { title: "NumPy & Array Computing", status: "upcoming", match: 84, topicId: "numpy" },
-    { title: "Supervised Learning", status: "upcoming", match: 75, topicId: "supervised" },
-  ],
-  hooks: [
-    { title: "Data Science Foundations", status: "upcoming", match: 90, topicId: "data-science" },
-    { title: "NumPy & Array Computing", status: "upcoming", match: 85, topicId: "numpy" },
-    { title: "Pandas & Data Wrangling", status: "upcoming", match: 80, topicId: "pandas" },
-  ],
-
-  // Data Science + subtopics → suggest ML topics
-  "data-science": [
-    { title: "Supervised Learning", status: "upcoming", match: 94, topicId: "supervised" },
-    { title: "Feature Engineering", status: "upcoming", match: 90, topicId: "feature-eng" },
-    { title: "Model Evaluation", status: "upcoming", match: 85, topicId: "model-eval" },
-  ],
-  numpy: [
-    { title: "Pandas & Data Wrangling", status: "upcoming", match: 98, topicId: "pandas" },
-    { title: "Data Visualization", status: "upcoming", match: 92, topicId: "visualization" },
-    { title: "Supervised Learning", status: "upcoming", match: 83, topicId: "supervised" },
-  ],
-  pandas: [
-    { title: "Data Visualization", status: "upcoming", match: 96, topicId: "visualization" },
-    { title: "Statistical Analysis", status: "upcoming", match: 90, topicId: "statistics" },
-    { title: "Feature Engineering", status: "upcoming", match: 84, topicId: "feature-eng" },
-  ],
-  visualization: [
-    { title: "Statistical Analysis", status: "upcoming", match: 94, topicId: "statistics" },
-    { title: "Machine Learning", status: "upcoming", match: 88, topicId: "machine-learning" },
-    { title: "Supervised Learning", status: "upcoming", match: 82, topicId: "supervised" },
-  ],
-  statistics: [
-    { title: "Machine Learning", status: "upcoming", match: 95, topicId: "machine-learning" },
-    { title: "Supervised Learning", status: "upcoming", match: 91, topicId: "supervised" },
-    { title: "Unsupervised Learning", status: "upcoming", match: 85, topicId: "unsupervised" },
-  ],
-
-  // ML + subtopics → suggest deep learning topics
-  "machine-learning": [
-    { title: "Neural Network Fundamentals", status: "upcoming", match: 93, topicId: "nn-basics" },
-    { title: "Feature Engineering", status: "upcoming", match: 88, topicId: "feature-eng" },
-    { title: "Convolutional Networks", status: "upcoming", match: 81, topicId: "cnn" },
-  ],
-  supervised: [
-    { title: "Unsupervised Learning", status: "upcoming", match: 96, topicId: "unsupervised" },
-    { title: "Model Evaluation", status: "upcoming", match: 91, topicId: "model-eval" },
-    { title: "Neural Network Fundamentals", status: "upcoming", match: 84, topicId: "nn-basics" },
-  ],
-  unsupervised: [
-    { title: "Model Evaluation", status: "upcoming", match: 95, topicId: "model-eval" },
-    { title: "Feature Engineering", status: "upcoming", match: 90, topicId: "feature-eng" },
-    { title: "Neural Network Fundamentals", status: "upcoming", match: 83, topicId: "nn-basics" },
-  ],
-  "model-eval": [
-    { title: "Feature Engineering", status: "upcoming", match: 94, topicId: "feature-eng" },
-    { title: "Neural Network Fundamentals", status: "upcoming", match: 88, topicId: "nn-basics" },
-    { title: "Convolutional Networks", status: "upcoming", match: 80, topicId: "cnn" },
-  ],
-  "feature-eng": [
-    { title: "Neural Network Fundamentals", status: "upcoming", match: 92, topicId: "nn-basics" },
-    { title: "Deep Learning & Neural Networks", status: "upcoming", match: 87, topicId: "deep-learning" },
-    { title: "Convolutional Networks", status: "upcoming", match: 82, topicId: "cnn" },
-  ],
-
-  // Deep Learning + subtopics → loop back to advanced or related
-  "deep-learning": [
-    { title: "Convolutional Networks", status: "upcoming", match: 97, topicId: "cnn" },
-    { title: "Recurrent Networks", status: "upcoming", match: 93, topicId: "rnn" },
-    { title: "Transformers & Attention", status: "upcoming", match: 89, topicId: "transformers" },
-  ],
-  "nn-basics": [
-    { title: "Convolutional Networks", status: "upcoming", match: 97, topicId: "cnn" },
-    { title: "Recurrent Networks", status: "upcoming", match: 91, topicId: "rnn" },
-    { title: "Transformers & Attention", status: "upcoming", match: 86, topicId: "transformers" },
-  ],
-  cnn: [
-    { title: "Recurrent Networks", status: "upcoming", match: 95, topicId: "rnn" },
-    { title: "Transformers & Attention", status: "upcoming", match: 91, topicId: "transformers" },
-    { title: "Feature Engineering", status: "upcoming", match: 80, topicId: "feature-eng" },
-  ],
-  rnn: [
-    { title: "Transformers & Attention", status: "upcoming", match: 97, topicId: "transformers" },
-    { title: "Convolutional Networks", status: "upcoming", match: 88, topicId: "cnn" },
-    { title: "Neural Network Fundamentals", status: "upcoming", match: 81, topicId: "nn-basics" },
-  ],
-  transformers: [
-    { title: "Feature Engineering", status: "upcoming", match: 86, topicId: "feature-eng" },
-    { title: "Machine Learning", status: "upcoming", match: 82, topicId: "machine-learning" },
-    { title: "Recurrent Networks", status: "upcoming", match: 78, topicId: "rnn" },
-  ],
-};
-
-// Fallback when a topic ID isn't mapped
-const fallbackUpNext: UpNextItem[] = [
-  { title: "State Management", status: "in-progress", match: 88, topicId: "state" },
-  { title: "Data Science Foundations", status: "upcoming", match: 83, topicId: "data-science" },
-  { title: "Machine Learning", status: "upcoming", match: 77, topicId: "machine-learning" },
-];
+  return remaining.slice(0, 3).map((t, i) => ({
+    title: t.title,
+    status: t.status === "in-progress" ? "in-progress" : "upcoming",
+    match: Math.max(70, 98 - i * 5 - Math.round((t.recommendation_score ?? 0.5) * 10)),
+    topicId: t.id,
+  }));
+}
 
 // ── mini node colours (matches roadmap) ───────────────────────────────────────
 function miniNodeStyle(status: string) {
@@ -286,7 +138,7 @@ function MiniDownArrow() {
   );
 }
 
-export default function TopicModal({ topic, onClose, onNavigate, suggestions, youtubeQueries, whyThis }: TopicModalProps) {
+export default function TopicModal({ topic, onClose, onNavigate, suggestions, youtubeQueries, whyThis, allTopics }: TopicModalProps) {
   const [activeTab, setActiveTab] = useState<"resources" | "why" | "next">("resources");
   const [resources, setResources] = useState<Resource[]>([]);
   const [scraped, setScraped] = useState<ScrapedResource[]>([]);
@@ -786,12 +638,17 @@ export default function TopicModal({ topic, onClose, onNavigate, suggestions, yo
           {activeTab === "next" && (
             <div className="animate-fade-in">
               <p className="text-sm text-muted mb-6">
-                Based on your progress and learning history, here&apos;s what we recommend next:
+                Based on your roadmap, here&apos;s what comes next:
               </p>
 
               {/* Roadmap-style chain of upcoming nodes */}
               <div className="flex flex-col items-center">
-                {(upNextMap[topic.id] ?? fallbackUpNext).map((item, i) => {
+                {computeUpNext(topic.id, allTopics ?? []).length === 0 ? (
+                  <div className="w-full py-8 text-center text-muted text-sm border border-dashed border-surface-border rounded-lg">
+                    You&apos;ve reached the end of your roadmap!
+                  </div>
+                ) : null}
+                {computeUpNext(topic.id, allTopics ?? []).map((item, i) => {
                   const s = miniNodeStyle(item.status);
                   return (
                     <div key={i} className="flex flex-col items-center w-full">
@@ -826,8 +683,7 @@ export default function TopicModal({ topic, onClose, onNavigate, suggestions, yo
                         </span>
                       </button>
 
-                      {/* Arrow between nodes — 3 items total */}
-                      {i < 2 && <MiniDownArrow />}
+                      {i < computeUpNext(topic.id, allTopics ?? []).length - 1 && <MiniDownArrow />}
                     </div>
                   );
                 })}

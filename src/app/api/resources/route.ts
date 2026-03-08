@@ -82,9 +82,6 @@ async function fetchGeminiResources(
 
 export async function POST(request: NextRequest) {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: "GEMINI_API_KEY is not configured." }, { status: 500 });
-  }
 
   let topic: string;
   try {
@@ -96,10 +93,17 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const [resources, scraped] = await Promise.allSettled([
-      fetchGeminiResources(topic, apiKey),
+    const promises: [
+      Promise<Resource[]>,
+      Promise<ScrapedResource[]>,
+    ] = [
+      apiKey
+        ? fetchGeminiResources(topic, apiKey)
+        : Promise.resolve([]),
       scrapeResources(topic),
-    ]);
+    ];
+
+    const [resources, scraped] = await Promise.allSettled(promises);
 
     const geminiResources: Resource[] =
       resources.status === "fulfilled" ? resources.value : [];

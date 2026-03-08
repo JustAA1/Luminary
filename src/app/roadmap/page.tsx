@@ -782,6 +782,7 @@ export default function RoadmapPage() {
         suggestions={selectedTopic?.suggestions}
         youtubeQueries={selectedTopic?.youtube_queries}
         whyThis={selectedTopic?.why_this}
+        allTopics={roadmap.map(t => ({ id: t.id, title: t.title, status: t.status, recommendation_score: t.recommendation_score }))}
       />
 
       {errorToast && (
