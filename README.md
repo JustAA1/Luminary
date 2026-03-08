@@ -332,3 +332,16 @@ Each roadmap object (in `/onboard`, `/signal`, `/switch-roadmap`, and inside `/r
 | `MLFLOW_TRACKING_URI` | MLflow logging (default `mlruns`) |
 
 If Supabase is not set, the API runs with in-memory storage only.
+
+---
+
+## Frontend (Next.js)
+
+This repo may include a Next.js frontend. To run it:
+
+```bash
+npm run dev
+# or: yarn dev | pnpm dev | bun dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). Edit `app/page.tsx` for the main page. See [Next.js docs](https://nextjs.org/docs) and [Deploy on Vercel](https://vercel.com/new) for deployment.
