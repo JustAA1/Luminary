@@ -11,6 +11,7 @@ export async function POST(request: NextRequest) {
       payload: {
         user_id: body.user_id,
         new_roadmap_id: body.new_roadmap_id,
+        context_text: body.context_text || "",
       },
     });
     const result = await runRiqeCli(input);

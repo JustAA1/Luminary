@@ -72,6 +72,7 @@ def _roadmap_to_schema(rm) -> RoadmapSchema:
                 confidence=n.confidence,
                 suggestions=getattr(n, "suggestions", []),
                 youtube_queries=getattr(n, "youtube_queries", []),
+                why_this=getattr(n, "why_this", ""),
             )
             for n in rm.nodes
         ],
@@ -148,7 +149,9 @@ async def switch_roadmap(req: SwitchRoadmapRequest) -> OnboardResponse:
     """Transfer knowledge state to a new roadmap context."""
     pipe = _get_pipeline()
     try:
-        state, roadmap = await pipe.switch_roadmap(req.user_id, req.new_roadmap_id)
+        state, roadmap = await pipe.switch_roadmap(
+            req.user_id, req.new_roadmap_id, context_text=req.context_text,
+        )
     except ValueError as exc:
         raise HTTPException(404, str(exc))
     return OnboardResponse(

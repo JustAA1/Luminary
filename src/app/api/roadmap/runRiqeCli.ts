@@ -43,6 +43,10 @@ function startDaemon() {
   daemon.stderr?.setEncoding("utf-8");
   daemon.stderr?.on("data", (chunk: string) => {
     stderrBuf += chunk;
+    // Forward RIQE logs to console for visibility
+    chunk.split("\n").filter(Boolean).forEach(line => {
+      if (line.startsWith("RIQE")) console.error(`[RIQE-daemon] ${line}`);
+    });
   });
   daemon.on("error", (err) => {
     daemon = null;

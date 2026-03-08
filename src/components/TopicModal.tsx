@@ -27,6 +27,11 @@ interface TopicModalProps {
     title: string;
     description: string;
     status: "completed" | "in-progress" | "upcoming";
+    recommendation_score?: number;
+    signal_score?: number;
+    confidence?: number;
+    prerequisites?: string[];
+    difficulty?: number;
   } | null;
   onClose: () => void;
   onNavigate?: (topicId: string) => void;
@@ -34,6 +39,8 @@ interface TopicModalProps {
   suggestions?: string[];
   /** From RIQE/Gemini: YouTube search phrases for this topic */
   youtubeQueries?: string[];
+  /** From Gemini: personalized explanation of why this topic matters */
+  whyThis?: string;
 }
 
 const youtubeResources = [
@@ -240,7 +247,7 @@ function MiniDownArrow() {
   );
 }
 
-export default function TopicModal({ topic, onClose, onNavigate, suggestions, youtubeQueries }: TopicModalProps) {
+export default function TopicModal({ topic, onClose, onNavigate, suggestions, youtubeQueries, whyThis }: TopicModalProps) {
   const [activeTab, setActiveTab] = useState<"resources" | "why" | "next">("resources");
 
   if (!topic) return null;
@@ -444,50 +451,108 @@ export default function TopicModal({ topic, onClose, onNavigate, suggestions, yo
           {/* ── Why This? ── */}
           {activeTab === "why" && (
             <div className="animate-fade-in space-y-6">
+              {/* Gemini personalized explanation */}
               <div className="rounded-xl bg-dallas-green/5 border border-dallas-green/20 p-5">
                 <div className="flex items-start gap-3">
                   <Lightbulb size={20} className="text-dallas-green mt-0.5 flex-shrink-0" />
                   <div>
                     <h3 className="text-sm font-semibold mb-2">Why this topic matters for you</h3>
                     <p className="text-sm text-muted leading-relaxed">
-                      Based on your background in{" "}
-                      <span className="text-dallas-green font-medium">Python</span> and interest in{" "}
-                      <span className="text-dallas-green font-medium">Machine Learning</span>, mastering{" "}
-                      <span className="font-medium text-foreground">{topic.title}</span> will strengthen
-                      your foundation and unlock advanced topics in your roadmap.
+                      {whyThis || `${topic.title} is positioned in your roadmap based on your current knowledge state, signal history, and the prerequisite relationships in quantitative finance. The ML pipeline scored this topic with the metrics shown below.`}
                     </p>
                   </div>
                 </div>
               </div>
 
+              {/* ML Scores */}
               <div>
-                <h3 className="mb-3 text-sm font-semibold">Connections to Your Profile</h3>
+                <h3 className="mb-3 text-sm font-semibold">ML Pipeline Scores</h3>
                 <div className="space-y-3">
                   {[
-                    { field: "Data Science", relation: `${topic.title} is fundamental for building data pipelines and processing large datasets.` },
-                    { field: "Web Development", relation: "Full-stack developers regularly use these concepts in production applications." },
-                    { field: "Career Goals", relation: "This skill appears in 78% of job listings matching your profile." },
-                  ].map((item, i) => (
-                    <div key={i} className="rounded-xl border border-surface-border bg-background/30 p-4">
-                      <p className="text-xs font-semibold text-dallas-green mb-1">{item.field}</p>
-                      <p className="text-sm text-muted">{item.relation}</p>
+                    { label: "Recommendation Score", value: topic.recommendation_score, color: "#46b533", desc: "Composite relevance to your profile" },
+                    { label: "Signal Score", value: topic.signal_score, color: "#a855f7", desc: "How strongly your learning signals relate" },
+                    { label: "Confidence", value: topic.confidence, color: "#3b82f6", desc: "Pipeline certainty in this placement" },
+                  ].map((score) => (
+                    <div key={score.label} className="rounded-xl border border-surface-border bg-background/30 p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <p className="text-xs font-semibold">{score.label}</p>
+                          <p className="text-[10px] text-muted-dark">{score.desc}</p>
+                        </div>
+                        <span className="text-sm font-bold" style={{ color: score.color }}>
+                          {score.value != null ? `${(score.value * 100).toFixed(0)}%` : "N/A"}
+                        </span>
+                      </div>
+                      <div className="h-2 rounded-full bg-surface-border overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-700"
+                          style={{ width: `${(score.value ?? 0) * 100}%`, background: score.color }}
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
 
+              {/* Difficulty */}
+              <div className="rounded-xl border border-surface-border bg-background/30 p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <p className="text-xs font-semibold">Difficulty Level</p>
+                    <p className="text-[10px] text-muted-dark">How challenging this topic is</p>
+                  </div>
+                  <span className="text-sm font-bold" style={{ color: (topic.difficulty ?? 0) > 0.6 ? "#f59e0b" : "#10b981" }}>
+                    {topic.difficulty != null ? `${(topic.difficulty * 100).toFixed(0)}%` : "N/A"}
+                  </span>
+                </div>
+                <div className="flex gap-1">
+                  {Array.from({ length: 10 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="h-2 flex-1 rounded-full transition-all"
+                      style={{
+                        background: i < Math.round((topic.difficulty ?? 0) * 10)
+                          ? (topic.difficulty ?? 0) > 0.6 ? "#f59e0b" : "#10b981"
+                          : "rgba(113,113,122,0.2)",
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Prerequisites */}
+              {topic.prerequisites && topic.prerequisites.length > 0 && (
+                <div>
+                  <h3 className="mb-3 text-sm font-semibold">Prerequisites</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {topic.prerequisites.map((prereq) => (
+                      <button
+                        key={prereq}
+                        onClick={() => onNavigate?.(prereq)}
+                        className="rounded-lg border border-surface-border bg-background/50 px-3 py-2 text-xs font-medium text-muted hover:border-dallas-green hover:text-dallas-green transition-colors"
+                      >
+                        {prereq.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-muted-dark mt-2">Click a prerequisite to view its details</p>
+                </div>
+              )}
+
+              {/* How to learn */}
               <div>
                 <h3 className="mb-3 text-sm font-semibold flex items-center gap-2">
                   <BookOpen size={16} className="text-muted" />
                   How to Learn It Best
                 </h3>
                 <p className="text-sm text-muted leading-relaxed">
-                  Your profile suggests you learn best through{" "}
-                  <span className="text-foreground font-medium">hands-on projects</span> and{" "}
-                  <span className="text-foreground font-medium">video tutorials</span>. We recommend
-                  starting with the video resources above, then building a small project to solidify
-                  your understanding. Allocate approximately{" "}
-                  <span className="text-dallas-green font-medium">2–3 hours</span> for this topic.
+                  Based on the pipeline scores, this topic has a{" "}
+                  <span className="font-medium text-foreground">
+                    {(topic.recommendation_score ?? 0) > 0.5 ? "high" : "moderate"} relevance
+                  </span>{" "}
+                  to your profile{topic.difficulty != null && topic.difficulty > 0.6 ? " and is more challenging — consider spending extra time on foundational concepts first" : ""}.
+                  {(topic.signal_score ?? 0) > 0.3 && " Your recent learning signals suggest active interest in this area — great momentum!"}
+                  {" "}Start with the video resources and build understanding through practice.
                 </p>
               </div>
             </div>

@@ -63,6 +63,7 @@ class RoadmapNode:
     confidence: float
     suggestions: list[str] = field(default_factory=list)  # Gemini: refined next steps, resources
     youtube_queries: list[str] = field(default_factory=list)  # Gemini: search phrases for YouTube API
+    why_this: str = ""  # Gemini: personalized explanation of why this topic matters for the user
 
 
 @dataclass
@@ -91,6 +92,7 @@ class Roadmap:
                     "confidence": n.confidence,
                     "suggestions": getattr(n, "suggestions", []),
                     "youtube_queries": getattr(n, "youtube_queries", []),
+                    "why_this": getattr(n, "why_this", ""),
                 }
                 for n in self.nodes
             ],
@@ -291,6 +293,107 @@ class RoadmapGenerator:
         new_roadmap.version = roadmap.version + 1
         new_roadmap.quality_score = self._compute_quality(new_roadmap)
         return new_roadmap
+
+    # ── generate with dynamic topics ──────────────────────────────────
+
+    def generate_with_dynamic_topics(
+        self,
+        state: KnowledgeState,
+        gemini_topics: list[dict],
+        text_encoder: Any = None,
+    ) -> Roadmap:
+        """
+        Generate a roadmap using Gemini-produced topic outlines.
+
+        Uses ONLY the Gemini-generated topics (not merged with static ones)
+        since Gemini already produces context-relevant topics tailored to
+        the user's prompt and profile.
+        """
+        import uuid as _uuid
+
+        # Convert Gemini topics to Topic objects
+        dynamic_topics: list[Topic] = []
+        for gt in gemini_topics:
+            tid = gt.get("topic_id", f"gemini_topic_{len(dynamic_topics)}")
+            topic = Topic(
+                topic_id=tid,
+                title=gt.get("title", tid.replace("_", " ").title()),
+                description=gt.get("description", ""),
+                difficulty=float(gt.get("difficulty", 0.5)),
+            )
+            # Compute embeddings if encoder available
+            if text_encoder is not None:
+                full_text = f"{topic.title}. {topic.description}"
+                topic.embedding = text_encoder.encode(full_text)
+                topic.embedding_128 = topic.embedding.reshape(3, 128).mean(axis=0)
+            dynamic_topics.append(topic)
+
+        # Register prerequisites from Gemini output into the graph
+        for gt in gemini_topics:
+            tid = gt.get("topic_id", "")
+            for prereq in gt.get("prerequisites", []):
+                if prereq and tid:
+                    if prereq not in self.prereq_graph.graph:
+                        self.prereq_graph.graph.add_node(prereq)
+                    if tid not in self.prereq_graph.graph:
+                        self.prereq_graph.graph.add_node(tid)
+                    if not self.prereq_graph.graph.has_edge(prereq, tid):
+                        self.prereq_graph.graph.add_edge(prereq, tid)
+                        # Check for cycles — remove edge if it creates one
+                        if not nx.is_directed_acyclic_graph(self.prereq_graph.graph):
+                            self.prereq_graph.graph.remove_edge(prereq, tid)
+
+        # Score ONLY the Gemini-generated topics
+        scored = self.score_topics(state, dynamic_topics)
+
+        # Build a lookup for topic objects
+        topic_map = {t.topic_id: t for t in dynamic_topics}
+
+        # Use Gemini's original ordering as tiebreaker when ML scores are equal/zero
+        # (preserves Gemini's foundational→advanced ordering)
+        gemini_order = {gt.get("topic_id", ""): i for i, gt in enumerate(gemini_topics)}
+
+        # Filter completed topics
+        scored_filtered = [(t, s) for t, s in scored if t.topic_id not in state.completed_topics]
+
+        # If all ML scores are near-zero (fresh user), use Gemini ordering directly
+        max_score = max((s for _, s in scored_filtered), default=0.0)
+        if max_score < 0.05:
+            # ML scores meaningless — use Gemini's original order
+            sorted_ids = [gt.get("topic_id", "") for gt in gemini_topics
+                         if gt.get("topic_id", "") not in state.completed_topics]
+        else:
+            # Sort by ML score, with Gemini order as tiebreaker
+            scored_filtered.sort(key=lambda x: (-x[1], gemini_order.get(x[0].topic_id, 999)))
+            sorted_ids = [t.topic_id for t, _ in scored_filtered]
+
+        # Build nodes (cap at TOP_K_ROADMAP)
+        from riqe.config import TOP_K_ROADMAP
+        nodes: list[RoadmapNode] = []
+        score_map = {t.topic_id: s for t, s in scored}
+        for tid in sorted_ids[:TOP_K_ROADMAP]:
+            topic = topic_map.get(tid)
+            if topic is None:
+                continue
+            nodes.append(
+                RoadmapNode(
+                    topic_id=tid,
+                    title=topic.title,
+                    description=topic.description,
+                    difficulty=topic.difficulty,
+                    prerequisites=self.prereq_graph.get_prerequisites(tid),
+                    recommendation_score=score_map.get(tid, 0.0),
+                    signal_score=self._best_signal_score(state, tid),
+                    confidence=1.0 - topic.difficulty,
+                )
+            )
+
+        return Roadmap(
+            roadmap_id=str(_uuid.uuid4()),
+            user_id=state.user_id,
+            nodes=nodes,
+            created_at=datetime.utcnow(),
+        )
 
     # ── helpers ────────────────────────────────────────────────────────
 

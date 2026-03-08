@@ -24,6 +24,12 @@ interface RoadmapTopicUI {
   status: "completed" | "in-progress" | "upcoming";
   suggestions?: string[];
   youtube_queries?: string[];
+  why_this?: string;
+  recommendation_score?: number;
+  signal_score?: number;
+  confidence?: number;
+  prerequisites?: string[];
+  difficulty?: number;
 }
 
 interface Phase {
@@ -52,6 +58,12 @@ function toTopic(node: RoadmapNode, index: number): RoadmapTopicUI {
     status: index === 0 ? "in-progress" : "upcoming",
     suggestions: node.suggestions,
     youtube_queries: node.youtube_queries,
+    why_this: node.why_this,
+    recommendation_score: node.recommendation_score,
+    signal_score: node.signal_score,
+    confidence: node.confidence,
+    prerequisites: node.prerequisites,
+    difficulty: node.difficulty,
   };
 }
 
@@ -298,66 +310,72 @@ function CircularProgress({ percent }: { percent: number }) {
   );
 }
 
-// ─── History panel ────────────────────────────────────────────────────────────
+// ─── Inline History Cards ─────────────────────────────────────────────────────
 
-function HistoryPanel({
-  entries, open, onClose, onSelect, onDelete,
+function InlineHistoryCards({
+  entries, onSelect, onDelete,
 }: {
   entries: RoadmapHistoryEntry[];
-  open: boolean;
-  onClose: () => void;
   onSelect: (entry: RoadmapHistoryEntry) => void;
   onDelete: (entryId: string) => void;
 }) {
-  if (!open) return null;
+  if (entries.length === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-surface-border bg-surface/50 p-12 text-center text-muted">
+        <History size={28} className="mx-auto mb-3 text-muted-dark" />
+        <p className="text-sm">No previous roadmaps yet.</p>
+        <p className="text-xs text-muted-dark mt-1">When you create a new roadmap, the current one will be saved here.</p>
+      </div>
+    );
+  }
   return (
-    <>
-      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="fixed right-0 top-0 z-50 flex h-screen w-full max-w-sm flex-col border-l border-surface-border bg-surface shadow-2xl shadow-black/50 animate-slide-in-right">
-        <div className="flex items-center justify-between border-b border-surface-border px-6 py-5">
-          <div>
-            <h2 className="text-lg font-bold">Previous Roadmaps</h2>
-            <p className="text-xs text-muted mt-1">{entries.length} saved</p>
-          </div>
-          <button onClick={onClose} className="rounded-xl p-2 text-muted hover:bg-surface-hover hover:text-foreground transition-colors">
-            <X size={20} />
-          </button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {entries.length === 0 ? (
-            <p className="text-sm text-muted text-center py-8">No previous roadmaps yet.</p>
-          ) : entries.map(entry => (
-            <div
-              key={entry.id}
-              className="glass-card p-4 cursor-pointer hover:border-dallas-green/40 transition-colors group"
-              onClick={() => { onSelect(entry); onClose(); }}
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-semibold">
-                    Roadmap {entry.roadmapId.slice(0, 8)}...
-                  </p>
-                  <p className="text-xs text-muted mt-1">
-                    {entry.topicCount} topics &middot; {entry.completedCount} completed
-                  </p>
-                  <p className="text-[10px] text-muted-dark mt-1">
-                    {new Date(entry.savedAt).toLocaleDateString()} at{" "}
-                    {new Date(entry.savedAt).toLocaleTimeString()}
-                  </p>
-                </div>
-                <button
-                  onClick={(e) => { e.stopPropagation(); onDelete(entry.id); }}
-                  className="text-muted-dark opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all p-1"
-                  title="Remove from history"
-                >
-                  <X size={14} />
-                </button>
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 pb-8">
+      {entries.map(entry => (
+        <div
+          key={entry.id}
+          className="glass-card p-5 cursor-pointer hover:border-dallas-green/40 transition-all group hover:scale-[1.02] hover:shadow-xl"
+          onClick={() => onSelect(entry)}
+        >
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg bg-dallas-green/10 flex items-center justify-center">
+                <Map size={14} className="text-dallas-green" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">
+                  Roadmap {entry.roadmapId.slice(0, 8)}&hellip;
+                </p>
+                <p className="text-[10px] text-muted-dark">
+                  {new Date(entry.savedAt).toLocaleDateString()} at{" "}
+                  {new Date(entry.savedAt).toLocaleTimeString()}
+                </p>
               </div>
             </div>
-          ))}
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(entry.id); }}
+              className="text-muted-dark opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all p-1 rounded-lg hover:bg-red-500/10"
+              title="Remove from history"
+            >
+              <X size={14} />
+            </button>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <div className="flex justify-between text-xs text-muted mb-1">
+                <span>{entry.completedCount}/{entry.topicCount} topics</span>
+                <span>{entry.topicCount > 0 ? Math.round((entry.completedCount / entry.topicCount) * 100) : 0}%</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-surface-border overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-dallas-green transition-all"
+                  style={{ width: `${entry.topicCount > 0 ? (entry.completedCount / entry.topicCount) * 100 : 0}%` }}
+                />
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </>
+      ))}
+    </div>
   );
 }
 
@@ -384,9 +402,9 @@ export default function RoadmapPage() {
   const [errorToast,   setErrorToast]   = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<string | null>(null);
 
-  // history
+  // history & tabs
   const [history,              setHistory]              = useState<RoadmapHistoryEntry[]>([]);
-  const [historyOpen,          setHistoryOpen]          = useState(false);
+  const [activeMainTab,        setActiveMainTab]        = useState<"current" | "history">("current");
   const [viewingHistoryEntry,  setViewingHistoryEntry]  = useState<RoadmapHistoryEntry | null>(null);
 
   // scroll ref
@@ -474,13 +492,16 @@ export default function RoadmapPage() {
     if (!prompt.trim() || !userId) { showError("Enter a prompt and make sure you are signed in."); return; }
     setUpdateBusy(true);
     try {
-      persistRoadmap(await riqeUpdateRoadmap(userId, prompt.trim()));
+      const res = await riqeUpdateRoadmap(userId, prompt.trim());
+      console.log("[handleUpdate] raw response:", JSON.stringify(res).slice(0, 500));
+      console.log("[handleUpdate] nodes count:", res?.nodes?.length);
+      persistRoadmap(res);
       setPrompt("");
       showSuccess("Roadmap updated.");
       setViewingHistoryEntry(null);
       scrollToTree();
     }
-    catch (e) { showError(e instanceof Error ? e.message : "Update failed"); }
+    catch (e) { console.error("[handleUpdate] error:", e); showError(e instanceof Error ? e.message : "Update failed"); }
     finally { setUpdateBusy(false); }
   };
 
@@ -488,16 +509,28 @@ export default function RoadmapPage() {
     if (!userId) { showError("Not signed in."); return; }
     setCreateBusy(true);
     try {
-      if (newCtx.trim()) await riqeUpdateRoadmap(userId, newCtx.trim());
       // archive current roadmap before replacing
       if (roadmap.length > 0 && roadmapId) pushToHistory(roadmap, roadmapId);
-      const res = await riqeCreateNewRoadmap(userId, crypto.randomUUID?.() ?? `rm-${Date.now()}`);
-      persistRoadmap(res.roadmap);
+      // Pass context_text directly to the pipeline — it will be processed as a signal
+      // in the NEW roadmap context, then Gemini will enrich with suggestions/why_this
+      const res = await riqeCreateNewRoadmap(
+        userId,
+        crypto.randomUUID?.() ?? `rm-${Date.now()}`,
+        newCtx.trim(),
+      );
+      console.log("[handleCreateNew] raw response:", JSON.stringify(res).slice(0, 500));
+      console.log("[handleCreateNew] res.roadmap:", res?.roadmap ? `nodes=${res.roadmap.nodes?.length}` : "UNDEFINED");
+      console.log("[handleCreateNew] res.nodes:", res?.nodes?.length ?? "no direct nodes");
+      // The response is OnboardResponse: { state, roadmap: RoadmapResponse }
+      const rm = res.roadmap ?? res;
+      console.log("[handleCreateNew] final rm.nodes:", rm?.nodes?.length);
+      persistRoadmap(rm);
       setNewCtx("");
       showSuccess("New roadmap created.");
       setViewingHistoryEntry(null);
+      setActiveMainTab("current");
       scrollToTree();
-    } catch (e) { showError(e instanceof Error ? e.message : "Create failed. You may need to onboard first."); }
+    } catch (e) { console.error("[handleCreateNew] error:", e); showError(e instanceof Error ? e.message : "Create failed. You may need to onboard first."); }
     finally { setCreateBusy(false); }
   };
 
@@ -565,118 +598,194 @@ export default function RoadmapPage() {
               {!isViewingHistory && roadmapId && <span className="block text-xs text-muted-dark mt-1">ID: {roadmapId.slice(0, 8)}&hellip;</span>}
             </p>
           </div>
-          {history.length > 0 && (
-            <button
-              onClick={() => setHistoryOpen(true)}
-              className="flex items-center gap-2 rounded-xl border border-surface-border bg-surface px-3 py-2 text-xs font-medium text-muted hover:text-foreground hover:border-dallas-green transition-all"
-            >
-              <History size={14} />
-              Previous Roadmaps ({history.length})
-            </button>
+        </div>
+
+        {/* ── Main Tabs ── */}
+        <div className="mt-6 flex border-b border-surface-border">
+          <button
+            onClick={() => { setActiveMainTab("current"); setViewingHistoryEntry(null); }}
+            className={`px-5 py-3 text-sm font-semibold transition-colors border-b-2 ${
+              activeMainTab === "current"
+                ? "border-dallas-green text-dallas-green"
+                : "border-transparent text-muted hover:text-foreground"
+            }`}
+          >
+            Current Roadmap
+          </button>
+          <button
+            onClick={() => setActiveMainTab("history")}
+            className={`px-5 py-3 text-sm font-semibold transition-colors border-b-2 flex items-center gap-2 ${
+              activeMainTab === "history"
+                ? "border-dallas-green text-dallas-green"
+                : "border-transparent text-muted hover:text-foreground"
+            }`}
+          >
+            <History size={14} />
+            Previous Roadmaps
+            {history.length > 0 && (
+              <span className="ml-1 rounded-full bg-surface-border px-2 py-0.5 text-[10px] font-bold">
+                {history.length}
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* ── History tab content ── */}
+      {activeMainTab === "history" && (
+        <div className="animate-fade-in">
+          {/* History view banner (when viewing a specific entry) */}
+          {isViewingHistory && (
+            <div className="mb-6 glass-card p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <History size={14} className="text-muted" />
+                <span className="text-sm text-muted">
+                  Viewing roadmap from {new Date(viewingHistoryEntry.savedAt).toLocaleDateString()} &mdash; {viewingHistoryEntry.topicCount} topics
+                </span>
+              </div>
+              <button
+                onClick={() => setViewingHistoryEntry(null)}
+                className="text-xs font-semibold text-dallas-green hover:underline"
+              >
+                &larr; Back to all previous
+              </button>
+            </div>
+          )}
+
+          {isViewingHistory ? (
+            <>
+              {/* Progress for viewed entry */}
+              {displayTopics.length > 0 && (
+                <div className="mb-8 glass-card p-5 flex items-center gap-6">
+                  <CircularProgress percent={percent} />
+                  <div className="space-y-2 text-sm">
+                    {[{ label: "Completed", count: completedCount, color: "#10b981" }, { label: "In Progress", count: inProgressCount, color: "#eab308" }, { label: "Upcoming", count: displayTopics.length - completedCount - inProgressCount, color: "#71717a" }].map(s => (
+                      <div key={s.label} className="flex items-center gap-2">
+                        <div className="h-2.5 w-2.5 rounded-full" style={{ background: s.color }} />
+                        <span className="text-muted text-xs">{s.label}</span>
+                        <span className="font-bold text-xs ml-auto">{s.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="ml-auto hidden md:block text-xs text-muted-dark">
+                    Read-only &mdash; viewing a previous roadmap.
+                  </div>
+                </div>
+              )}
+              {/* Tree for viewed entry */}
+              <div ref={treeRef} className="flex flex-col items-center gap-0 pb-16 max-w-4xl mx-auto">
+                {phases.map((phase, i) => (
+                  <PhaseSection
+                    key={phase.id}
+                    phase={phase}
+                    isLast={i === phases.length - 1}
+                    onOpenTopic={setSelectedTopic}
+                    onToggleTopic={toggleTopicStatus}
+                    readOnly={true}
+                  />
+                ))}
+              </div>
+            </>
+          ) : (
+            <InlineHistoryCards
+              entries={history}
+              onSelect={(entry) => setViewingHistoryEntry(entry)}
+              onDelete={deleteFromHistory}
+            />
           )}
         </div>
-      </div>
-
-      <PipelineInfoBanner />
-
-      {/* Action cards */}
-      <div className="mb-10 flex flex-col gap-5">
-        <div className="glass-card p-5 space-y-3">
-          <h3 className="text-sm font-semibold flex items-center gap-2"><Wand2 size={15} className="text-dallas-green" />Update current roadmap</h3>
-          <p className="text-xs text-muted">Enter a prompt &mdash; your text is classified by the local RIQESignalClassifier, updates your knowledge state, and the roadmap is rebuilt. Gemini re-enriches all topics.</p>
-          <textarea value={prompt} onChange={e => setPrompt(e.target.value)} placeholder='e.g. "I want to focus on Black-Scholes and volatility"' rows={3}
-            className="w-full rounded-xl border border-surface-border bg-background/50 px-4 py-3 text-sm placeholder:text-muted-dark focus:border-dallas-green focus:outline-none focus:ring-1 focus:ring-dallas-green/40 transition-all resize-none" />
-          <button onClick={handleUpdate} disabled={updateBusy || !userId}
-            className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-dallas-green hover:bg-dallas-green-dark disabled:opacity-50 disabled:cursor-not-allowed transition-all">
-            {updateBusy ? <><RefreshCw size={15} className="animate-spin" />Updating&hellip;</> : <><Wand2 size={15} />Update roadmap</>}
-          </button>
-        </div>
-
-        <div className="glass-card p-5 space-y-3">
-          <h3 className="text-sm font-semibold flex items-center gap-2"><PlusCircle size={15} className="text-dallas-green" />{roadmap.length === 0 ? "Generate your roadmap" : "Create new roadmap"}</h3>
-          <p className="text-xs text-muted">{roadmap.length === 0 ? "Describe your background or goals — the local ML pipeline uses this as profile context to build your tree." : "Start a fresh path for a different quant area. Your current roadmap will be saved to history."}</p>
-          <textarea value={newCtx} onChange={e => setNewCtx(e.target.value)}
-            placeholder={roadmap.length === 0 ? 'e.g. "I have a stats background and want to learn derivatives pricing"' : 'e.g. "Focus on algorithmic trading" (optional)'}
-            rows={3} className="w-full rounded-xl border border-surface-border bg-background/50 px-4 py-3 text-sm placeholder:text-muted-dark focus:border-dallas-green focus:outline-none focus:ring-1 focus:ring-dallas-green/40 transition-all resize-none" />
-          <p className="text-[11px] text-muted-dark flex items-center gap-1"><Cpu size={11} />Embedded locally &rarr; classified by RIQE signal model &rarr; context passed to Gemini.</p>
-          <button onClick={roadmap.length === 0 ? handleGenerateFirst : handleCreateNew} disabled={createBusy || !userId}
-            className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
-            {createBusy ? <><RefreshCw size={15} className="animate-spin" />{roadmap.length === 0 ? "Generating\u2026" : "Creating\u2026"}</> : <><PlusCircle size={15} />{roadmap.length === 0 ? "Generate roadmap" : "Create new roadmap"}</>}
-          </button>
-        </div>
-      </div>
-
-      {/* History view banner */}
-      {isViewingHistory && (
-        <div className="mb-6 glass-card p-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <History size={14} className="text-muted" />
-            <span className="text-sm text-muted">
-              Viewing roadmap from {new Date(viewingHistoryEntry.savedAt).toLocaleDateString()} &mdash; {viewingHistoryEntry.topicCount} topics
-            </span>
-          </div>
-          <button
-            onClick={() => setViewingHistoryEntry(null)}
-            className="text-xs font-semibold text-dallas-green hover:underline"
-          >
-            Back to current roadmap
-          </button>
-        </div>
       )}
 
-      {/* Progress */}
-      {displayTopics.length > 0 && (
-        <div className="mb-8 glass-card p-5 flex items-center gap-6">
-          <CircularProgress percent={percent} />
-          <div className="space-y-2 text-sm">
-            {[{ label: "Completed", count: completedCount, color: "#10b981" }, { label: "In Progress", count: inProgressCount, color: "#eab308" }, { label: "Upcoming", count: displayTopics.length - completedCount - inProgressCount, color: "#71717a" }].map(s => (
-              <div key={s.label} className="flex items-center gap-2">
-                <div className="h-2.5 w-2.5 rounded-full" style={{ background: s.color }} />
-                <span className="text-muted text-xs">{s.label}</span>
-                <span className="font-bold text-xs ml-auto">{s.count}</span>
+      {/* ── Current tab content ── */}
+      {activeMainTab === "current" && (
+        <div className="animate-fade-in">
+          <PipelineInfoBanner />
+
+          {/* Action cards */}
+          <div className="mb-10 flex flex-col gap-5">
+            <div className="glass-card p-5 space-y-3">
+              <h3 className="text-sm font-semibold flex items-center gap-2"><Wand2 size={15} className="text-dallas-green" />Update current roadmap</h3>
+              <p className="text-xs text-muted">Enter a prompt &mdash; your text is classified by the local RIQESignalClassifier, updates your knowledge state, and the roadmap is rebuilt. Gemini re-enriches all topics.</p>
+              <textarea value={prompt} onChange={e => setPrompt(e.target.value)} placeholder='e.g. "I want to focus on Black-Scholes and volatility"' rows={3}
+                className="w-full rounded-xl border border-surface-border bg-background/50 px-4 py-3 text-sm placeholder:text-muted-dark focus:border-dallas-green focus:outline-none focus:ring-1 focus:ring-dallas-green/40 transition-all resize-none" />
+              <button onClick={handleUpdate} disabled={updateBusy || !userId}
+                className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-dallas-green hover:bg-dallas-green-dark disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                {updateBusy ? <><RefreshCw size={15} className="animate-spin" />Updating&hellip;</> : <><Wand2 size={15} />Update roadmap</>}
+              </button>
+            </div>
+
+            <div className="glass-card p-5 space-y-3">
+              <h3 className="text-sm font-semibold flex items-center gap-2"><PlusCircle size={15} className="text-dallas-green" />{roadmap.length === 0 ? "Generate your roadmap" : "Create new roadmap"}</h3>
+              <p className="text-xs text-muted">{roadmap.length === 0 ? "Describe your background or goals — the local ML pipeline uses this as profile context to build your tree." : "Start a fresh path for a different quant area. Your current roadmap will be saved to history."}</p>
+              <textarea value={newCtx} onChange={e => setNewCtx(e.target.value)}
+                placeholder={roadmap.length === 0 ? 'e.g. "I have a stats background and want to learn derivatives pricing"' : 'e.g. "Focus on algorithmic trading" (optional)'}
+                rows={3} className="w-full rounded-xl border border-surface-border bg-background/50 px-4 py-3 text-sm placeholder:text-muted-dark focus:border-dallas-green focus:outline-none focus:ring-1 focus:ring-dallas-green/40 transition-all resize-none" />
+              <p className="text-[11px] text-muted-dark flex items-center gap-1"><Cpu size={11} />Embedded locally &rarr; classified by RIQE signal model &rarr; context passed to Gemini.</p>
+              <button onClick={roadmap.length === 0 ? handleGenerateFirst : handleCreateNew} disabled={createBusy || !userId}
+                className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                {createBusy ? <><RefreshCw size={15} className="animate-spin" />{roadmap.length === 0 ? "Generating\u2026" : "Creating\u2026"}</> : <><PlusCircle size={15} />{roadmap.length === 0 ? "Generate roadmap" : "Create new roadmap"}</>}
+              </button>
+            </div>
+          </div>
+
+          {/* Progress */}
+          {displayTopics.length > 0 && (
+            <div className="mb-8 glass-card p-5 flex items-center gap-6">
+              <CircularProgress percent={percent} />
+              <div className="space-y-2 text-sm">
+                {[{ label: "Completed", count: completedCount, color: "#10b981" }, { label: "In Progress", count: inProgressCount, color: "#eab308" }, { label: "Upcoming", count: displayTopics.length - completedCount - inProgressCount, color: "#71717a" }].map(s => (
+                  <div key={s.label} className="flex items-center gap-2">
+                    <div className="h-2.5 w-2.5 rounded-full" style={{ background: s.color }} />
+                    <span className="text-muted text-xs">{s.label}</span>
+                    <span className="font-bold text-xs ml-auto">{s.count}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <div className="ml-auto hidden md:block text-xs text-muted-dark">
-            {isViewingHistory ? "Read-only \u2014 viewing a previous roadmap." : "Click a topic\u2019s badge to mark progress."}
-          </div>
-        </div>
-      )}
+              <div className="ml-auto hidden md:block text-xs text-muted-dark">
+                Click a topic&rsquo;s badge to mark progress.
+              </div>
+            </div>
+          )}
 
-      {/* Tree roadmap */}
-      {displayTopics.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-surface-border bg-surface/50 p-12 text-center text-muted">
-          <p className="text-sm">No roadmap yet. Add context above and click &quot;Generate roadmap&quot; &mdash; the local RIQE pipeline builds a tree-structured quant learning path.</p>
-        </div>
-      ) : (
-        <div ref={treeRef} className="flex flex-col items-center gap-0 pb-16 max-w-4xl mx-auto">
-          {phases.map((phase, i) => (
-            <PhaseSection
-              key={phase.id}
-              phase={phase}
-              isLast={i === phases.length - 1}
-              onOpenTopic={setSelectedTopic}
-              onToggleTopic={toggleTopicStatus}
-              readOnly={isViewingHistory}
-            />
-          ))}
+          {/* Tree roadmap */}
+          {displayTopics.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-surface-border bg-surface/50 p-12 text-center text-muted">
+              <p className="text-sm">No roadmap yet. Add context above and click &quot;Generate roadmap&quot; &mdash; the local RIQE pipeline builds a tree-structured quant learning path.</p>
+            </div>
+          ) : (
+            <div ref={treeRef} className="flex flex-col items-center gap-0 pb-16 max-w-4xl mx-auto">
+              {phases.map((phase, i) => (
+                <PhaseSection
+                  key={phase.id}
+                  phase={phase}
+                  isLast={i === phases.length - 1}
+                  onOpenTopic={setSelectedTopic}
+                  onToggleTopic={toggleTopicStatus}
+                  readOnly={false}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
       <TopicModal
-        topic={selectedTopic ? { id: selectedTopic.id, title: selectedTopic.title, description: selectedTopic.description, status: selectedTopic.status } : null}
+        topic={selectedTopic ? {
+          id: selectedTopic.id,
+          title: selectedTopic.title,
+          description: selectedTopic.description,
+          status: selectedTopic.status,
+          recommendation_score: selectedTopic.recommendation_score,
+          signal_score: selectedTopic.signal_score,
+          confidence: selectedTopic.confidence,
+          prerequisites: selectedTopic.prerequisites,
+          difficulty: selectedTopic.difficulty,
+        } : null}
         onClose={() => setSelectedTopic(null)}
         onNavigate={handleNavigate}
         suggestions={selectedTopic?.suggestions}
         youtubeQueries={selectedTopic?.youtube_queries}
-      />
-
-      <HistoryPanel
-        entries={history}
-        open={historyOpen}
-        onClose={() => setHistoryOpen(false)}
-        onSelect={setViewingHistoryEntry}
-        onDelete={deleteFromHistory}
+        whyThis={selectedTopic?.why_this}
       />
 
       {errorToast && (

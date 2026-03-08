@@ -84,6 +84,10 @@ class InMemoryDB:
     async def load_metrics(self, user_id: str) -> list[dict[str, Any]]:
         return list(reversed(self._metrics.get(user_id, [])))
 
+    async def load_user_profile(self, user_id: str) -> Optional[dict[str, Any]]:
+        """Return in-memory placeholder user profile."""
+        return self._states.get(user_id)  # re-use knowledge state as proxy
+
 
 # =====================================================================
 # Supabase Client (when credentials are available)
@@ -187,6 +191,35 @@ class SupabaseClient:
             .execute()
         )
         return resp.data or []
+
+    async def load_user_profile(self, user_id: str) -> Optional[dict[str, Any]]:
+        """Load user profile data (skills, interests, coursework) from Supabase."""
+        try:
+            pd_resp = (
+                self.client.table("profile_data")
+                .select("*")
+                .eq("user_id", user_id)
+                .limit(1)
+                .execute()
+            )
+            if pd_resp.data:
+                return pd_resp.data[0]
+        except Exception:
+            pass
+        # Fallback: try profiles table
+        try:
+            p_resp = (
+                self.client.table("profiles")
+                .select("full_name, total_hours, current_streak, topics_done, overall_progress")
+                .eq("id", user_id)
+                .limit(1)
+                .execute()
+            )
+            if p_resp.data:
+                return p_resp.data[0]
+        except Exception:
+            pass
+        return None
 
 
 # =====================================================================

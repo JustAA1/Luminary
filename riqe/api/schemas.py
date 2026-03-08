@@ -61,6 +61,7 @@ class RoadmapNodeSchema(BaseModel):
     confidence: float
     suggestions: list[str] = Field(default_factory=list)  # Gemini: refined next steps, resources
     youtube_queries: list[str] = Field(default_factory=list)  # For YouTube API / frontend
+    why_this: str = ""  # Gemini: personalized explanation
 
 
 class RoadmapSchema(BaseModel):
@@ -116,6 +117,7 @@ class SwitchRoadmapRequest(BaseModel):
     """POST /switch-roadmap request body."""
     user_id: str
     new_roadmap_id: str
+    context_text: str = ""
 
 
 # ═══════════════════════════════════════════════════════════════════════

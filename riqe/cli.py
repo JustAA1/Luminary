@@ -24,9 +24,9 @@ from pathlib import Path
 # confuses the Node.js daemon handler, which treats any stderr as a fatal error.
 warnings.filterwarnings("ignore", category=FutureWarning, module="mlflow")
 
-# Force in-memory DB when running as CLI (no Supabase required)
-os.environ["SUPABASE_URL"] = os.environ.get("SUPABASE_URL", "")
-os.environ["SUPABASE_KEY"] = os.environ.get("SUPABASE_KEY", "")
+# Keep SUPABASE_URL / SUPABASE_KEY from .env if set — the pipeline needs
+# them to load user profile context from Supabase for Gemini calls.
+# If not set, the InMemoryDB fallback is used automatically.
 
 from riqe.core.pipeline import RIQEPipeline
 from riqe.api.schemas import (
@@ -90,7 +90,8 @@ async def _run(pipe: RIQEPipeline, req: dict) -> dict:
             user_id=payload["user_id"],
             new_roadmap_id=payload["new_roadmap_id"],
         )
-        state, roadmap = await pipe.switch_roadmap(body.user_id, body.new_roadmap_id)
+        context_text = payload.get("context_text", "")
+        state, roadmap = await pipe.switch_roadmap(body.user_id, body.new_roadmap_id, context_text=context_text)
         out = OnboardResponse(
             state=_state_to_schema(state),
             roadmap=_roadmap_to_schema(roadmap),
@@ -106,6 +107,7 @@ def main() -> None:
         async def loop() -> None:
             pipe = RIQEPipeline()
             pipe.metrics.set_total_topics(len(pipe.topics))
+            print(f"RIQE daemon ready (topics={len(pipe.topics)})", file=sys.stderr, flush=True)
             while True:
                 line = sys.stdin.readline()
                 if not line:
@@ -115,11 +117,16 @@ def main() -> None:
                     continue
                 try:
                     req = json.loads(line)
+                    action = req.get("action", "unknown")
+                    print(f"RIQE: processing action={action}", file=sys.stderr, flush=True)
                     result = await _run(pipe, req)
+                    print(f"RIQE: action={action} complete", file=sys.stderr, flush=True)
                     print(json.dumps(result), flush=True)
                 except json.JSONDecodeError as e:
+                    print(f"RIQE: JSON error: {e}", file=sys.stderr, flush=True)
                     print(_serialize({"error": f"Invalid JSON: {e}"}), flush=True)
                 except Exception as e:
+                    print(f"RIQE: error: {e}", file=sys.stderr, flush=True)
                     print(_serialize({"error": str(e)}), flush=True)
         asyncio.run(loop())
         return

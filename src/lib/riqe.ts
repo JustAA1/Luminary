@@ -16,6 +16,7 @@ export interface RoadmapNode {
   confidence: number;
   suggestions: string[];
   youtube_queries: string[];
+  why_this: string;
 }
 
 export interface RoadmapResponse {
@@ -82,11 +83,11 @@ export async function riqeUpdateRoadmap(user_id: string, text: string): Promise<
 }
 
 /** Create a new roadmap for a different quant area (runs local Python pipeline). */
-export async function riqeCreateNewRoadmap(user_id: string, new_roadmap_id: string): Promise<OnboardResponse> {
+export async function riqeCreateNewRoadmap(user_id: string, new_roadmap_id: string, context_text: string = ""): Promise<OnboardResponse> {
   const res = await fetch(`${API_BASE}/api/roadmap/switch-roadmap`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ user_id, new_roadmap_id }),
+    body: JSON.stringify({ user_id, new_roadmap_id, context_text }),
   });
   const data = await res.json();
   if (!res.ok) {
