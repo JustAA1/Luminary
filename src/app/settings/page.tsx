@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Upload, BookOpen, CheckCircle2, X, GraduationCap, Search } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 const majors = [
   "Computer Science",
@@ -54,15 +55,40 @@ export default function SettingsPage() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!isDirty) return;
     setSaveState("saving");
-    setTimeout(() => {
-      setSavedMajor(selectedMajor);
-      setSavedResume(resumeFile);
-      setSaveState("saved");
-      setTimeout(() => setSaveState("idle"), 2500);
-    }, 900);
+
+    // Persist to Supabase
+    try {
+      const supabase = createClient();
+      if (supabase) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.id) {
+          await supabase.from("profiles").upsert({
+            id: user.id,
+            field_of_study: selectedMajor,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: "id" });
+        }
+      }
+    } catch (e) {
+      console.warn("Settings save to Supabase failed:", e);
+    }
+
+    // Also save to localStorage for onboarding/roadmap cross-page access
+    try {
+      const existing = localStorage.getItem("luminary_onboarding");
+      const parsed = existing ? JSON.parse(existing) : {};
+      parsed.field_of_study = selectedMajor;
+      if (resumeFile) parsed.resume_file = resumeFile;
+      localStorage.setItem("luminary_onboarding", JSON.stringify(parsed));
+    } catch {}
+
+    setSavedMajor(selectedMajor);
+    setSavedResume(resumeFile);
+    setSaveState("saved");
+    setTimeout(() => setSaveState("idle"), 2500);
   };
 
   const handleFileDrop = (e: React.DragEvent) => {
