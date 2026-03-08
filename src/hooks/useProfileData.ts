@@ -14,6 +14,10 @@ export interface ProfileDataState {
   pastCoursework: PastCourseworkItem[];
   overallProgressPercentage: number;
   topicsDone: number;
+  /** Past courses from the dedicated past_courses table */
+  pastCourses: PastCourseworkItem[];
+  /** Roadmap snapshot course names */
+  roadmapCourseNames: string[];
 }
 
 const DEFAULT_STATE: ProfileDataState = {
@@ -25,6 +29,8 @@ const DEFAULT_STATE: ProfileDataState = {
   pastCoursework: [],
   overallProgressPercentage: 0,
   topicsDone: 0,
+  pastCourses: [],
+  roadmapCourseNames: [],
 };
 
 export function useProfileData() {
@@ -43,9 +49,11 @@ export function useProfileData() {
     setLoading(true);
     setError(null);
     try {
-      const [profileRes, profileDataRes] = await Promise.all([
+      const [profileRes, profileDataRes, pastCoursesRes, snapshotRes] = await Promise.all([
         supabase.from("profiles").select("full_name, total_hours, current_streak, topics_done, overall_progress").eq("id", uid).single(),
         supabase.from("profile_data").select("*").eq("user_id", uid).maybeSingle(),
+        supabase.from("past_courses").select("*").eq("user_id", uid).order("sort_order", { ascending: true }),
+        supabase.from("roadmap_snapshots").select("course_names").eq("user_id", uid).order("snapshot_at", { ascending: false }).limit(1).maybeSingle(),
       ]);
 
       const profile = profileRes.data;
@@ -60,6 +68,23 @@ export function useProfileData() {
       const overallProgressPercentage = pd?.overall_progress_percentage ?? profile?.overall_progress ?? 0;
       const topicsDone = pd?.topics_done ?? profile?.topics_done ?? 0;
 
+      // Past courses from dedicated table
+      const pastCourses: PastCourseworkItem[] = (pastCoursesRes.data ?? []).map((row: Record<string, unknown>) => ({
+        id: row.id as number | undefined,
+        title: (row.title as string) ?? "",
+        category: (row.category as string) ?? "Quant",
+        progress: Number(row.progress) || 0,
+        hours: Number(row.hours) || 0,
+        rating: Number(row.rating) || 0,
+        color: (row.color as string) ?? "#46b533",
+        sort_order: Number(row.sort_order) || 0,
+      }));
+
+      // Roadmap snapshot course names
+      const roadmapCourseNames: string[] = Array.isArray(snapshotRes.data?.course_names)
+        ? (snapshotRes.data.course_names as string[])
+        : [];
+
       setState({
         fullName,
         coursesActive,
@@ -69,6 +94,8 @@ export function useProfileData() {
         pastCoursework: Array.isArray(pastCoursework) ? pastCoursework : [],
         overallProgressPercentage: Math.min(100, Math.max(0, Number(overallProgressPercentage) || 0)),
         topicsDone: Number(topicsDone) || 0,
+        pastCourses,
+        roadmapCourseNames,
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load profile");

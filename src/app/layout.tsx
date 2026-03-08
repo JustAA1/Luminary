@@ -20,9 +20,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Luminary — AI-Powered Learning",
+  title: "Luminary — Quantitative Finance Learning",
   description:
-    "Your personalized AI learning platform that adapts to your unique learning style.",
+    "Your personalized AI learning platform for quantitative finance — derivatives, risk, stochastic calculus, and more.",
 };
 
 export default function RootLayout({
