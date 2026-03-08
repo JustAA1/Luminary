@@ -44,7 +44,13 @@ python -m riqe.training.train_signal_classifier
 
 ### 4. Run the API
 
+Single entry point for the app is **`riqe/app.py`** (pipeline + FastAPI in one place; paths stay in `riqe/config.py`).
+
 ```bash
+python -m riqe.app
+# or
+uvicorn riqe.app:app --host 0.0.0.0 --port 8000
+# or (same app via wrapper)
 uvicorn riqe.api.api:app --reload --host 0.0.0.0 --port 8000
 ```
 
@@ -302,7 +308,8 @@ Each roadmap object (in `/onboard`, `/signal`, `/switch-roadmap`, and inside `/r
 
 ## Project layout (relevant to API)
 
-- `riqe/api/api.py` — FastAPI app and routes  
+- **`riqe/app.py`** — **Single entry point**: pipeline creation + FastAPI app and all routes. Paths stay in `config.py`; nothing else changed.
+- `riqe/api/api.py` — Thin wrapper: re-exports `app` and `create_pipeline` from `riqe.app`.
 - `riqe/api/schemas.py` — Pydantic request/response models  
 - `riqe/core/pipeline.py` — Orchestrator (onboard, process_text_input, switch_roadmap)  
 - `riqe/core/signal_processor.py` — Text → topic, strength, type, trend  
@@ -310,7 +317,7 @@ Each roadmap object (in `/onboard`, `/signal`, `/switch-roadmap`, and inside `/r
 - `riqe/core/knowledge_state.py` — User state and updates  
 - `riqe/models/` — UserProfileMLP, RIQESignalClassifier, TrendGRU  
 - `riqe/db.py` — In-memory or Supabase persistence  
-- `riqe/config.py` — Dimensions, paths, env vars  
+- `riqe/config.py` — Dimensions, paths, env vars (single source for DATA_DIR, TOPICS_FILE, CHECKPOINTS_DIR, etc.)  
 - `riqe/data/topics.json` — Topic list  
 - `riqe/data/prerequisites.json` — DAG edges for ordering  
 
