@@ -19,6 +19,8 @@ import {
   GitBranch,
   Library,
   Search,
+  Download,
+  CheckCircle2,
 } from "lucide-react";
 import YouTubeSnippet from "@/components/YouTubeSnippet";
 
@@ -289,6 +291,9 @@ export default function TopicModal({ topic, onClose, onNavigate, suggestions, yo
   const [scraped, setScraped] = useState<ScrapedResource[]>([]);
   const [resourcesLoading, setResourcesLoading] = useState(false);
   const [scrapedLoading, setScrapedLoading] = useState(false);
+  const [slidesLoading, setSlidesLoading] = useState(false);
+  const [slidesGenerated, setSlidesGenerated] = useState(false);
+  const [slidesError, setSlidesError] = useState(false);
 
   useEffect(() => {
     if (!topic) return;
@@ -296,6 +301,8 @@ export default function TopicModal({ topic, onClose, onNavigate, suggestions, yo
     setScraped([]);
     setResourcesLoading(true);
     setScrapedLoading(true);
+    setSlidesGenerated(false);
+    setSlidesError(false);
     fetch("/api/resources", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -575,13 +582,66 @@ export default function TopicModal({ topic, onClose, onNavigate, suggestions, yo
                   AI-Generated PowerPoints
                 </h3>
                 <div className="rounded-xl border border-dallas-green/20 bg-dallas-green/5 p-5 text-center">
-                  <Sparkles size={28} className="mx-auto mb-3 text-dallas-green" />
-                  <p className="text-sm font-semibold">Custom Presentation</p>
-                  <p className="mt-1 text-xs text-muted">
-                    AI-generated slides tailored to your learning style
+                  {slidesGenerated ? (
+                    <CheckCircle2 size={28} className="mx-auto mb-3 text-dallas-green" />
+                  ) : (
+                    <Sparkles size={28} className="mx-auto mb-3 text-dallas-green" />
+                  )}
+                  <p className="text-sm font-semibold">
+                    {slidesGenerated ? "Slides Downloaded!" : "Custom Presentation"}
                   </p>
-                  <button className="mt-4 rounded-lg bg-dallas-green px-4 py-2 text-sm font-semibold text-white hover:bg-dallas-green-dark transition-colors">
-                    Generate Slides
+                  <p className="mt-1 text-xs text-muted">
+                    {slidesGenerated
+                      ? `8-slide deck on "${topic.title}" saved to your downloads`
+                      : "AI-generated slides tailored to this topic"}
+                  </p>
+                  {slidesError && (
+                    <p className="mt-2 text-xs text-red-400">Failed to generate. Try again.</p>
+                  )}
+                  <button
+                    disabled={slidesLoading}
+                    onClick={async () => {
+                      setSlidesLoading(true);
+                      setSlidesError(false);
+                      setSlidesGenerated(false);
+                      try {
+                        const res = await fetch("/api/slides", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ topic: topic.title, description: topic.description }),
+                        });
+                        if (!res.ok) throw new Error("Failed");
+                        const blob = await res.blob();
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `${topic.title.replace(/[^a-zA-Z0-9 ]/g, "").replace(/\s+/g, "_")}_slides.pptx`;
+                        document.body.appendChild(a);
+                        a.click();
+                        a.remove();
+                        URL.revokeObjectURL(url);
+                        setSlidesGenerated(true);
+                      } catch {
+                        setSlidesError(true);
+                      } finally {
+                        setSlidesLoading(false);
+                      }
+                    }}
+                    className="mt-4 inline-flex items-center gap-2 rounded-lg bg-dallas-green px-4 py-2 text-sm font-semibold text-white hover:bg-dallas-green-dark transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {slidesLoading ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin" />
+                        Generating...
+                      </>
+                    ) : slidesGenerated ? (
+                      <>
+                        <Download size={14} />
+                        Download Again
+                      </>
+                    ) : (
+                      "Generate Slides"
+                    )}
                   </button>
                 </div>
               </div>

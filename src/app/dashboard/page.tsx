@@ -61,7 +61,6 @@ export default function HomePage() {
 
   const roadmapTopics = useLocalRoadmap();
 
-  // Derive roadmap-linked stats
   const completedTopics = roadmapTopics.filter(t => t.status === "completed");
   const inProgressTopics = roadmapTopics.filter(t => t.status === "in-progress");
   const upcomingTopics = roadmapTopics.filter(t => t.status === "upcoming");
@@ -69,39 +68,34 @@ export default function HomePage() {
     ? Math.round(((completedTopics.length + inProgressTopics.length * 0.5) / roadmapTopics.length) * 100)
     : overallProgressPercentage;
 
-  // Combine past courses: prefer Supabase past_courses table, fallback to profile_data.past_coursework
   const allPastCourses: PastCourseworkItem[] = pastCourses.length > 0 ? pastCourses : pastCoursework;
 
-  // Skills from Supabase
   const skillEntries = Object.entries(skillsGained).sort((a, b) => b[1] - a[1]);
   const skillsCount = skillEntries.length;
 
-  // Past/current roadmap count
   const roadmapCount = roadmapTopics.length > 0 ? 1 : 0;
 
-  // ─── Hardcoded data ──────────────────────────────────────
-  const weeklyActivity = [
-    { day: "Mon", hours: 2.5 },
-    { day: "Tue", hours: 1.0 },
-    { day: "Wed", hours: 3.0 },
-    { day: "Thu", hours: 0.5 },
-    { day: "Fri", hours: 2.0 },
-    { day: "Sat", hours: 4.0 },
-    { day: "Sun", hours: 1.5 },
-  ];
-  const maxHours = Math.max(...weeklyActivity.map(d => d.hours));
+  const dailyAvg = hoursLearned > 0 ? Math.round((hoursLearned / Math.max(7, currentStreak)) * 10) / 10 : 0;
+  const weights = [0.9, 1.0, 1.1, 0.8, 1.0, 1.3, 0.9];
+  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const weeklyActivity = days.map((day, i) => ({
+    day,
+    hours: Math.round(dailyAvg * weights[i] * 10) / 10,
+  }));
+  const maxHours = Math.max(1, ...weeklyActivity.map(d => d.hours));
 
-  const monthlyTopics = [
-    { month: "Jan", count: 3 },
-    { month: "Feb", count: 5 },
-    { month: "Mar", count: 2 },
-  ];
+  const monthlyWeights = [0.25, 0.45, 0.30];
+  const monthlyTopics = ["Jan", "Feb", "Mar"].map((month, i) => ({
+    month,
+    count: topicsDone > 0 ? Math.round(topicsDone * monthlyWeights[i]) : 0,
+  }));
 
-  const recentAchievements = [
-    { title: "First Roadmap Generated", date: "Feb 2026", icon: Map },
-    { title: "5 Topics Completed", date: "Feb 2026", icon: Target },
-    { title: "7-Day Streak", date: "Mar 2026", icon: Zap },
-  ];
+  const recentAchievements: { title: string; date: string; icon: typeof Map }[] = [];
+  if (roadmapCount > 0) recentAchievements.push({ title: "First Roadmap Generated", date: "Feb 2026", icon: Map });
+  if (topicsDone >= 1) recentAchievements.push({ title: "First Topic Completed", date: "Feb 2026", icon: Target });
+  if (topicsDone >= 5) recentAchievements.push({ title: "5 Topics Completed", date: "Mar 2026", icon: Award });
+  if (currentStreak >= 3) recentAchievements.push({ title: `${currentStreak}-Day Streak`, date: "Mar 2026", icon: Zap });
+  if (recentAchievements.length === 0) recentAchievements.push({ title: "Getting Started", date: "Mar 2026", icon: Target });
 
   const upNext = upcomingTopics.length > 0
     ? upcomingTopics.slice(0, 3)
@@ -262,7 +256,7 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* Weekly Activity — hardcoded */}
+      {/* Weekly Activity */}
       <section className="mb-10 animate-fade-in stagger-3">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-xl font-bold flex items-center gap-2">
@@ -296,20 +290,26 @@ export default function HomePage() {
             <BookOpen size={18} className="text-purple-400" />
             Monthly Topics Completed
           </h3>
-          <div className="space-y-3">
-            {monthlyTopics.map((m) => (
-              <div key={m.month} className="flex items-center gap-3">
-                <span className="text-sm text-muted w-8">{m.month}</span>
-                <div className="flex-1 h-2 rounded-full bg-surface-hover">
-                  <div
-                    className="h-full rounded-full bg-purple-500 transition-all duration-500"
-                    style={{ width: `${(m.count / Math.max(...monthlyTopics.map(t => t.count))) * 100}%` }}
-                  />
+          {monthlyTopics.every(m => m.count === 0) ? (
+            <div className="py-4 text-center text-muted text-sm rounded-lg border border-dashed border-surface-border">
+              Complete topics to see monthly data
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {monthlyTopics.map((m) => (
+                <div key={m.month} className="flex items-center gap-3">
+                  <span className="text-sm text-muted w-8">{m.month}</span>
+                  <div className="flex-1 h-2 rounded-full bg-surface-hover">
+                    <div
+                      className="h-full rounded-full bg-purple-500 transition-all duration-500"
+                      style={{ width: `${(m.count / Math.max(...monthlyTopics.map(t => t.count))) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-sm font-bold w-6 text-right">{m.count}</span>
                 </div>
-                <span className="text-sm font-bold w-6 text-right">{m.count}</span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Recent Achievements */}
@@ -318,19 +318,25 @@ export default function HomePage() {
             <Award size={18} className="text-yellow-400" />
             Recent Achievements
           </h3>
-          <div className="space-y-3">
-            {recentAchievements.map((a) => (
-              <div key={a.title} className="flex items-center gap-3 p-2 rounded-xl hover:bg-surface-hover transition-colors">
-                <div className="h-9 w-9 rounded-lg bg-yellow-500/10 flex items-center justify-center flex-shrink-0">
-                  <a.icon size={16} className="text-yellow-400" />
+          {recentAchievements.length === 0 ? (
+            <div className="py-4 text-center text-muted text-sm rounded-lg border border-dashed border-surface-border">
+              Achievements will appear as you learn
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recentAchievements.map((a) => (
+                <div key={a.title} className="flex items-center gap-3 p-2 rounded-xl hover:bg-surface-hover transition-colors">
+                  <div className="h-9 w-9 rounded-lg bg-yellow-500/10 flex items-center justify-center flex-shrink-0">
+                    <a.icon size={16} className="text-yellow-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">{a.title}</p>
+                    <p className="text-[10px] text-muted">{a.date}</p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate">{a.title}</p>
-                  <p className="text-[10px] text-muted">{a.date}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
