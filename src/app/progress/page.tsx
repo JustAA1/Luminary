@@ -13,12 +13,12 @@ interface RoadmapTopicLocal {
 }
 
 function levelGradient(level: number) {
-  const hue = Math.round((level / 100) * 120);
-  return `linear-gradient(90deg, hsl(0,80%,48%), hsl(${hue},80%,44%))`;
+  const lightness = 44 - Math.round((level / 100) * 10);
+  return `linear-gradient(90deg, hsl(142,72%,${lightness + 6}%), hsl(142,72%,${lightness}%))`;
 }
 
 function overallGradient() {
-  return "linear-gradient(90deg, #ef4444 0%, #eab308 50%, #46b533 100%)";
+  return "linear-gradient(90deg, #22c55e 0%, #16a34a 50%, #46b533 100%)";
 }
 
 function computeWeekly(totalHours: number, streak: number) {
@@ -76,7 +76,14 @@ export default function ProgressPage() {
     } catch { /* ignore */ }
   }, []);
 
-  const totalProgress = Math.min(100, Math.max(0, overallProgressPercentage));
+  const completedCount = roadmapTopics.filter(t => t.status === "completed").length;
+  const inProgressCount = roadmapTopics.filter(t => t.status === "in-progress").length;
+  const roadmapProgress = roadmapTopics.length > 0
+    ? Math.round(((completedCount + inProgressCount * 0.5) / roadmapTopics.length) * 100)
+    : 0;
+  const totalProgress = roadmapTopics.length > 0
+    ? Math.min(100, roadmapProgress)
+    : Math.min(100, Math.max(0, overallProgressPercentage));
   const totalHours = hoursLearned;
 
   const weeklyData = computeWeekly(totalHours, currentStreak);
@@ -100,10 +107,10 @@ export default function ProgressPage() {
   const avgDaily = totalHours > 0 ? (totalHours / Math.max(7, currentStreak)).toFixed(1) : "0";
   const topicsPerWeek = topicsDone > 0 ? (topicsDone / Math.max(1, Math.ceil(currentStreak / 7))).toFixed(1) : "0";
   const completionRate = roadmapTopics.length > 0
-    ? Math.round((roadmapTopics.filter(t => t.status === "completed").length / roadmapTopics.length) * 100)
+    ? Math.round((completedCount / roadmapTopics.length) * 100)
     : totalProgress;
 
-  const remainingTopics = roadmapTopics.length - roadmapTopics.filter(t => t.status === "completed").length;
+  const remainingTopics = roadmapTopics.length - completedCount;
   const weeksToGo = Number(topicsPerWeek) > 0 ? Math.ceil(remainingTopics / Number(topicsPerWeek)) : 0;
   const pace = Number(avgDaily) >= 2 ? "Above average" : Number(avgDaily) >= 1 ? "Steady" : Number(avgDaily) > 0 ? "Getting started" : "Not started";
 
@@ -134,7 +141,9 @@ export default function ProgressPage() {
           <div className="flex-1">
             <h2 className="text-lg font-bold mb-1">Overall Learning Path</h2>
             <p className="text-sm text-muted mb-4">
-              Based on your completed courses and topics.
+              {roadmapTopics.length > 0
+                ? `${completedCount} of ${roadmapTopics.length} roadmap topics completed${inProgressCount > 0 ? `, ${inProgressCount} in progress` : ""}.`
+                : "Based on your completed courses and topics."}
             </p>
             <div className="h-4 w-full rounded-full bg-surface-hover overflow-hidden">
               <div
