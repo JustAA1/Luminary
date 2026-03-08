@@ -330,7 +330,12 @@ function InlineHistoryCards({
   }
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 pb-8">
-      {entries.map(entry => (
+      {entries.map(entry => {
+        const completed = entry.topics ? entry.topics.filter(t => t.status === "completed").length : entry.completedCount;
+        const inProgress = entry.topics ? entry.topics.filter(t => t.status === "in-progress").length : 0;
+        const progressPct = entry.topicCount > 0 ? Math.round(((completed + inProgress * 0.5) / entry.topicCount) * 100) : 0;
+
+        return (
         <div
           key={entry.id}
           className="glass-card p-5 cursor-pointer hover:border-dallas-green/40 transition-all group hover:scale-[1.02] hover:shadow-xl"
@@ -362,19 +367,19 @@ function InlineHistoryCards({
           <div className="flex items-center gap-3">
             <div className="flex-1">
               <div className="flex justify-between text-xs text-muted mb-1">
-                <span>{entry.completedCount}/{entry.topicCount} topics</span>
-                <span>{entry.topicCount > 0 ? Math.round((entry.completedCount / entry.topicCount) * 100) : 0}%</span>
+                <span>{completed}/{entry.topicCount} topics</span>
+                <span>{progressPct}%</span>
               </div>
               <div className="h-1.5 rounded-full bg-surface-border overflow-hidden">
                 <div
                   className="h-full rounded-full bg-dallas-green transition-all"
-                  style={{ width: `${entry.topicCount > 0 ? (entry.completedCount / entry.topicCount) * 100 : 0}%` }}
+                  style={{ width: `${progressPct}%` }}
                 />
               </div>
             </div>
           </div>
         </div>
-      ))}
+      )})}
     </div>
   );
 }

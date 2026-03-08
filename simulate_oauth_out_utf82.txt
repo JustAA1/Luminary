@@ -1,0 +1,49 @@
+﻿python : C:\Users\tush
+a\Documents\UT_Dallas\
+hackai-26\Luminary\sim
+ulate_data.py:47: 
+DeprecationWarning: da
+tetime.datetime.utcnow
+() is deprecated and 
+scheduled for removal 
+in a future version. 
+Use timezone-aware 
+objects to represent 
+datetimes in UTC: date
+time.datetime.now(date
+time.UTC).
+At line:1 char:1
++ python 
+simulate_data.py > sim
+ulate_oauth_out.txt 
+2>&1
++ ~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~
+    + CategoryInfo    
+          : NotSpeci  
+  fied: (C:\Users\t   
+ usha\...(datetime    
+.UTC).:String) []    
+, RemoteException
+    + FullyQualifiedE 
+   rrorId : NativeCo  
+  mmandError
+ 
+  base_time = 
+datetime.utcnow() - 
+timedelta(days=60)
+Connecting to Supabase at https://fnxqqujjknuocyzrkmsu.supabase.co
+Found user ID for tushsood@gmail.com: 4ed78ec7-16b4-414f-8f53-ea6c632dfbff
+Generating simulated roadmaps...
+Generated Roadmap 1/10 (Version 1)
+Generated Roadmap 2/10 (Version 2)
+Generated Roadmap 3/10 (Version 3)
+Generated Roadmap 4/10 (Version 4)
+Generated Roadmap 5/10 (Version 5)
+Generated Roadmap 6/10 (Version 6)
+Generated Roadmap 7/10 (Version 7)
+Generated Roadmap 8/10 (Version 8)
+Generated Roadmap 9/10 (Version 9)
+Generated Roadmap 10/10 (Version 10)
+Successfully generated 10 simulated scenarios for deep learning and quant finance.

@@ -1,0 +1,20 @@
+70a138f - Tushaar Sood, 16 minutes ago : Add ML Architecture documentation (Hackathon Pitch version)
+0a9ce46 - Tushaar Sood, 39 minutes ago : Fix typescript and lint errors from ndev merge
+2936be7 - Tushaar Sood, 51 minutes ago : Merge remote-tracking branch 'origin/ndev' into tdev
+af473b2 - nandhanalahari, 2 hours ago : feat: add PowerPoint generator and computed progress statistics
+0f83e29 - Nandhan Alahari, 2 hours ago : Merge branch 'ndev' of https://github.com/JustAA1/Luminary into tdev
+6aff547 - Rithwik Matta, 2 hours ago : fix: Supabase profile persistence ??? id-first update with email fallback, .select() verification, quant platform updates
+ac6ec8e - Rithwik Matta, 2 hours ago : fix: Supabase profile persistence ??? id-first update with email fallback, .select() verification, quant platform updates
+88e6c00 - nandhanalahari, 3 hours ago : feat: add web scraping engine for related readings in topic resources
+dac0388 - Tushaar Sood, 3 hours ago : Fix ML scoring bounds and update UI to display hackathon insights
+44bb334 - Tushaar Sood, 5 hours ago : Switch RIQE ML backend from Gemini to OpenAI GPT-4o
+55c7dac - Tushaar Sood, 5 hours ago : Merge origin/tdev
+b797f8a - Tushaar Sood, 5 hours ago : idk
+eed9836 - Tushaar Sood, 6 hours ago : Harden RIQE pipeline for local-first usage: suppress MLflow warnings, graceful DB fallback, improved CLI daemon
+72b0281 - JustAA1, 8 hours ago : ML integration + codebase inconsistency fixes
+c9ff22c - Tushaar Sood, 9 hours ago : Integrate RIQE pipeline locally: CLI, API routes, Supabase profile_data, roadmap UI, model load fixes
+f073ac3 - Tushaar Sood, 10 hours ago : Merge origin/main into tdev: resolve .gitignore and README, keep RIQE + Next.js
+b669a94 - Tushaar Sood, 10 hours ago : Single entry point: riqe/app.py, thin api.py wrapper, README layout
+e871ecd - Rithwik Matta, 10 hours ago : style(settings): remove default resume_2024.pdf
+03c88b2 - Tushaar Sood, 10 hours ago : RIQE: expanded training, API tests, README for local hosting and remote callers
+05aa870 - nandhanalahari, 10 hours ago : merge: bring ndev into main

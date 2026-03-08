@@ -1,0 +1,109 @@
+﻿python : C:\Users\tush
+a\Documents\UT_Dallas\
+hackai-26\Luminary\sim
+ulate_data.py:85: 
+DeprecationWarning: da
+tetime.datetime.utcnow
+() is deprecated and 
+scheduled for removal 
+in a future version. 
+Use timezone-aware 
+objects to represent 
+datetimes in UTC: date
+time.datetime.now(date
+time.UTC).
+At line:1 char:1
++ python 
+simulate_data.py > sim
+ulate_oauth_out.txt 
+2>&1
++ ~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~
+    + CategoryInfo    
+          : NotSpeci  
+  fied: (C:\Users\t   
+ usha\...(datetime    
+.UTC).:String) []    
+, RemoteException
+    + FullyQualifiedE 
+   rrorId : NativeCo  
+  mmandError
+ 
+  base_time = 
+datetime.utcnow() - 
+timedelta(days=60)
+Connecting to Supabase at https://fnxqqujjknuocyzrkmsu.supabase.co
+User tushsood@gmail.com not found. Attempting to create auth user...
+Successfully signed up map to ID: ead27b67-d9bb-4eb0-924a-1f963e914288
+Found user ID for tushsood@gmail.com: ead27b67-d9bb-4eb0-924a-1f963e914288
+Generating simulated roadmaps...
+Traceback (most 
+recent call last):
+  File "C:\Users\tusha
+\Documents\UT_Dallas\h
+ackai-26\Luminary\simu
+late_data.py", line 
+156, in <module>
+    
+asyncio.run(main())
+    
+~~~~~~~~~~~^^^^^^^^
+  File "C:\Python313\L
+ib\asyncio\runners.py"
+, line 195, in run
+    return 
+runner.run(main)
+           
+~~~~~~~~~~^^^^^^
+  File "C:\Python313\L
+ib\asyncio\runners.py"
+, line 118, in run
+    return self._loop.
+run_until_complete(tas
+k)
+           ~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~^^^^
+^^
+  File "C:\Python313\L
+ib\asyncio\base_events
+.py", line 725, in 
+run_until_complete
+    return 
+future.result()
+           
+~~~~~~~~~~~~~^^
+  File "C:\Users\tusha
+\Documents\UT_Dallas\h
+ackai-26\Luminary\simu
+late_data.py", line 
+127, in main
+    client.table("road
+map_snapshots").insert
+(snapshot_data).execut
+e()
+    ~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+~^^
+  File "C:\Users\tusha
+\AppData\Roaming\Pytho
+n\Python313\site-packa
+ges\postgrest\_sync\re
+quest_builder.py", 
+line 53, in execute
+    raise APIError(dic
+t(json_obj))
+postgrest.exceptions.A
+PIError: {'message': 
+'insert or update on 
+table 
+"roadmap_snapshots" 
+violates foreign key 
+constraint "roadmap_sn
+apshots_user_id_fkey"'
+, 'code': '23503', 
+'hint': None, 
+'details': 'Key is 
+not present in table 
+"profiles".'}

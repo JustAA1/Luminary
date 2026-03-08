@@ -75,7 +75,7 @@ export default function HomePage() {
 
   const roadmapCount = roadmapTopics.length > 0 ? 1 : 0;
 
-  const dailyAvg = hoursLearned > 0 ? Math.round((hoursLearned / Math.max(7, currentStreak)) * 10) / 10 : 0;
+  const dailyAvg = hoursLearned > 0 ? Math.round((hoursLearned / Math.max(7, currentStreak)) * 10) / 10 : 2.5; // Mock daily avg
   const weights = [0.9, 1.0, 1.1, 0.8, 1.0, 1.3, 0.9];
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const weeklyActivity = days.map((day, i) => ({
@@ -87,7 +87,7 @@ export default function HomePage() {
   const monthlyWeights = [0.25, 0.45, 0.30];
   const monthlyTopics = ["Jan", "Feb", "Mar"].map((month, i) => ({
     month,
-    count: topicsDone > 0 ? Math.round(topicsDone * monthlyWeights[i]) : 0,
+    count: topicsDone > 0 ? Math.round(topicsDone * monthlyWeights[i]) : Math.round(15 * monthlyWeights[i]), // Mock 15 topics
   }));
 
   const recentAchievements: { title: string; date: string; icon: typeof Map }[] = [];
