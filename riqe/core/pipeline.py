@@ -26,6 +26,7 @@ from riqe.core.roadmap_engine import (
 )
 from riqe.core.signal_processor import SignalProcessor
 from riqe.metrics import MetricsTracker
+from riqe.config import GEMINI_API_KEY
 
 
 class RIQEPipeline:
@@ -114,6 +115,15 @@ class RIQEPipeline:
 
         roadmap = self.roadmap_generator.generate(state)
 
+        # Gemini: generate roadmap items from pipeline output and attach to nodes
+        if GEMINI_API_KEY:
+            try:
+                from riqe.integrations.gemini_client import generate_roadmap_items, attach_gemini_suggestions_to_roadmap
+                items = generate_roadmap_items(state, roadmap)
+                attach_gemini_suggestions_to_roadmap(roadmap, items)
+            except Exception:
+                pass  # don't fail onboard if Gemini fails
+
         # Cache
         self._states[user_id] = state
         self._roadmaps[roadmap.roadmap_id] = roadmap
@@ -121,6 +131,11 @@ class RIQEPipeline:
         # Persist
         await db.save_knowledge_state(user_id, state.to_dict())
         await db.save_roadmap(roadmap.to_dict())
+        await db.save_roadmap_snapshot(
+            roadmap.user_id,
+            roadmap.roadmap_id,
+            [n.title for n in roadmap.nodes],
+        )
 
         # Log initial metrics
         self.metrics.log_roadmap_update(
@@ -164,11 +179,25 @@ class RIQEPipeline:
         else:
             updated = self.roadmap_generator.generate(state)
 
+        # Gemini: regenerate roadmap items for updated state/roadmap
+        if GEMINI_API_KEY:
+            try:
+                from riqe.integrations.gemini_client import generate_roadmap_items, attach_gemini_suggestions_to_roadmap
+                items = generate_roadmap_items(state, updated)
+                attach_gemini_suggestions_to_roadmap(updated, items)
+            except Exception:
+                pass
+
         self._roadmaps[updated.roadmap_id] = updated
 
         # Persist
         await db.save_knowledge_state(user_id, state.to_dict())
         await db.save_roadmap(updated.to_dict())
+        await db.save_roadmap_snapshot(
+            updated.user_id,
+            updated.roadmap_id,
+            [n.title for n in updated.nodes],
+        )
         await db.save_signal(user_id, {
             "text": signal.text,
             "topic": signal.topic,
@@ -215,6 +244,11 @@ class RIQEPipeline:
 
         await db.save_knowledge_state(user_id, new_state.to_dict())
         await db.save_roadmap(new_roadmap.to_dict())
+        await db.save_roadmap_snapshot(
+            new_roadmap.user_id,
+            new_roadmap.roadmap_id,
+            [n.title for n in new_roadmap.nodes],
+        )
 
         self.metrics.log_roadmap_update(
             user_id=user_id,

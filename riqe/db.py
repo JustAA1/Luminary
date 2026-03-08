@@ -44,6 +44,18 @@ class InMemoryDB:
         if rid not in self._user_roadmaps[uid]:
             self._user_roadmaps[uid].append(rid)
 
+    async def save_roadmap_snapshot(
+        self, user_id: str, roadmap_id: Optional[str], course_names: list[str]
+    ) -> None:
+        """Store a snapshot of roadmap course names (in-memory only; no Supabase table for snapshots in fallback)."""
+        if not hasattr(self, "_roadmap_snapshots"):
+            self._roadmap_snapshots: list[dict[str, Any]] = []
+        self._roadmap_snapshots.append({
+            "user_id": user_id,
+            "roadmap_id": roadmap_id,
+            "course_names": course_names,
+        })
+
     async def load_roadmap(self, roadmap_id: str) -> Optional[dict[str, Any]]:
         versions = self._roadmaps.get(roadmap_id, [])
         if versions:
@@ -114,6 +126,17 @@ class SupabaseClient:
 
     async def save_roadmap(self, roadmap_data: dict[str, Any]) -> None:
         self.client.table("roadmaps").insert(roadmap_data).execute()
+
+    async def save_roadmap_snapshot(
+        self, user_id: str, roadmap_id: Optional[str], course_names: list[str]
+    ) -> None:
+        """Persist roadmap snapshot to public.roadmap_snapshots (every course name, linked to user)."""
+        payload = {
+            "user_id": user_id,
+            "roadmap_id": roadmap_id,
+            "course_names": course_names,
+        }
+        self.client.table("roadmap_snapshots").insert(payload).execute()
 
     async def load_roadmap(self, roadmap_id: str) -> Optional[dict[str, Any]]:
         resp = (

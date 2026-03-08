@@ -4,8 +4,22 @@ All hyperparameters and environment variables in one place.
 """
 
 import os
+from pathlib import Path
 from typing import Final
 
+# Disable Hugging Face progress bars to avoid "loading weights 0%" flicker and timeout errors in subprocess
+os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
+
+# Load .env from project root (Luminary) so GEMINI_API_KEY etc. are available
+try:
+    from dotenv import load_dotenv
+    _root = Path(__file__).resolve().parent.parent
+    load_dotenv(_root / ".env")
+except ImportError:
+    pass
+
+# ── Gemini ────────────────────────────────────────────────────────────
+GEMINI_API_KEY: Final[str] = os.getenv("GEMINI_API_KEY", "")
 
 # ── Supabase ──────────────────────────────────────────────────────────
 SUPABASE_URL: Final[str] = os.getenv("SUPABASE_URL", "")
@@ -20,6 +34,8 @@ TEXT_EMBED_DIM: Final[int] = 384          # all-MiniLM-L6-v2 output
 USER_EMBED_DIM: Final[int] = 128         # UserProfileMLP output
 SIGNAL_FEATURE_DIM: Final[int] = 64      # TrendGRU input feature dim
 SENTENCE_MODEL_NAME: Final[str] = "all-MiniLM-L6-v2"
+# Optional: local directory containing a pre-downloaded sentence-transformers model (avoids download/loading weights 0% errors)
+RIQE_MODEL_PATH: Final[str] = os.getenv("RIQE_MODEL_PATH", "").strip()
 
 # ── Structured Encoder ───────────────────────────────────────────────
 FIELD_OF_STUDY_VOCAB: Final[list[str]] = [

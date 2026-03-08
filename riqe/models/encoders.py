@@ -15,6 +15,7 @@ from sentence_transformers import SentenceTransformer
 
 from riqe.config import (
     SENTENCE_MODEL_NAME,
+    RIQE_MODEL_PATH,
     FIELD_OF_STUDY_VOCAB,
     NUM_FIELDS,
     MAX_SKILLS,
@@ -34,10 +35,34 @@ class TextEncoder:
     """
     Wraps sentence-transformers ``all-MiniLM-L6-v2`` for 384-dim embeddings.
     Encodings are cached with ``functools.lru_cache``.
+    If RIQE_MODEL_PATH is set, loads from that directory with local_files_only=True
+    to avoid download and "loading weights 0%" errors when offline or blocked.
     """
 
     def __init__(self) -> None:
-        self._model = SentenceTransformer(SENTENCE_MODEL_NAME)
+        model_name_or_path = SENTENCE_MODEL_NAME
+        local_files_only = False
+        if RIQE_MODEL_PATH:
+            model_name_or_path = RIQE_MODEL_PATH
+            local_files_only = True
+        try:
+            self._model = SentenceTransformer(
+                model_name_or_path,
+                local_files_only=local_files_only,
+            )
+        except Exception as e:
+            if RIQE_MODEL_PATH:
+                raise RuntimeError(
+                    f"Failed to load embedding model from RIQE_MODEL_PATH={RIQE_MODEL_PATH}. "
+                    f"Ensure the directory contains a valid sentence-transformers model. Error: {e}"
+                ) from e
+            raise RuntimeError(
+                "Failed to load embedding model (often seen as 'loading weights 0%' then error). "
+                "Ensure you have internet access and can reach huggingface.co, or pre-download the model and set "
+                "RIQE_MODEL_PATH to the model directory. Example: python -c \"from sentence_transformers import "
+                "SentenceTransformer; m = SentenceTransformer('all-MiniLM-L6-v2'); m.save('/path/to/model')\" "
+                f"Then set RIQE_MODEL_PATH=/path/to/model. Original error: {e}"
+            ) from e
 
     # lru_cache requires hashable args — we wrap the string through a helper
     @functools.lru_cache(maxsize=4096)

@@ -28,23 +28,8 @@ interface CalendarEvent {
   type: "study" | "deadline" | "review" | "google";
 }
 
-const sampleEvents: Record<string, CalendarEvent[]> = {
-  "2026-3": [
-    { day: 3, title: "React State Mgmt", time: "10:00 AM", color: "bg-blue-500", type: "study" },
-    { day: 5, title: "Python Quiz", time: "2:00 PM", color: "bg-red-500", type: "deadline" },
-    { day: 7, title: "Weekly Review", time: "9:00 AM", color: "bg-dallas-green", type: "review" },
-    { day: 10, title: "Data Structures", time: "11:00 AM", color: "bg-purple-500", type: "study" },
-    { day: 12, title: "ML Assignment Due", time: "11:59 PM", color: "bg-red-500", type: "deadline" },
-    { day: 14, title: "Weekly Review", time: "9:00 AM", color: "bg-dallas-green", type: "review" },
-    { day: 15, title: "CSS Animations", time: "3:00 PM", color: "bg-cyan-500", type: "study" },
-    { day: 18, title: "API Integration", time: "10:00 AM", color: "bg-orange-500", type: "study" },
-    { day: 20, title: "Project Milestone", time: "5:00 PM", color: "bg-red-500", type: "deadline" },
-    { day: 21, title: "Weekly Review", time: "9:00 AM", color: "bg-dallas-green", type: "review" },
-    { day: 24, title: "Neural Networks", time: "1:00 PM", color: "bg-purple-500", type: "study" },
-    { day: 26, title: "Database Design", time: "10:00 AM", color: "bg-emerald-500", type: "study" },
-    { day: 28, title: "Weekly Review", time: "9:00 AM", color: "bg-dallas-green", type: "review" },
-  ],
-};
+// Events come from Google Calendar sync or future Supabase events table — no hardcoded list
+const staticEventsByMonth: Record<string, CalendarEvent[]> = {};
 
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
@@ -71,7 +56,7 @@ export default function CalendarPage() {
   const today = 7; // Simulated today
 
   const key = `${year}-${month + 1}`;
-  const luminaryEvents = sampleEvents[key] || [];
+  const luminaryEvents = staticEventsByMonth[key] ?? [];
 
   // Merge Luminary events with Google events for the current month
   const googleEventsThisMonth = googleEvents.filter(

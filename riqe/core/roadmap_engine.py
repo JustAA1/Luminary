@@ -61,6 +61,8 @@ class RoadmapNode:
     recommendation_score: float
     signal_score: float
     confidence: float
+    suggestions: list[str] = field(default_factory=list)  # Gemini: refined next steps, resources
+    youtube_queries: list[str] = field(default_factory=list)  # Gemini: search phrases for YouTube API
 
 
 @dataclass
@@ -87,6 +89,8 @@ class Roadmap:
                     "recommendation_score": n.recommendation_score,
                     "signal_score": n.signal_score,
                     "confidence": n.confidence,
+                    "suggestions": getattr(n, "suggestions", []),
+                    "youtube_queries": getattr(n, "youtube_queries", []),
                 }
                 for n in self.nodes
             ],

@@ -70,6 +70,8 @@ def _roadmap_to_schema(rm) -> RoadmapSchema:
                 recommendation_score=n.recommendation_score,
                 signal_score=n.signal_score,
                 confidence=n.confidence,
+                suggestions=getattr(n, "suggestions", []),
+                youtube_queries=getattr(n, "youtube_queries", []),
             )
             for n in rm.nodes
         ],

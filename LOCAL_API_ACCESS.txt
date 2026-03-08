@@ -1,0 +1,205 @@
+================================================================================
+RIQE API — How Other Local Hosts Can Access and Use the ML Pipeline
+================================================================================
+
+The API server must be running on the host machine with --host 0.0.0.0 so other
+computers on the same network can connect.
+
+--------------------------------------------------------------------------------
+1. ON THE HOST MACHINE (where the API runs)
+--------------------------------------------------------------------------------
+
+  • Start the server from the project folder (Luminary):
+
+      uvicorn riqe.api.api:app --host 0.0.0.0 --port 8000
+
+  • Find this machine's IP address (other hosts will use it instead of localhost):
+
+      Windows (PowerShell):  ipconfig
+      macOS/Linux:           ifconfig   or   ip addr
+
+    Look for "IPv4 Address" (Windows) or "inet" (macOS/Linux) on your Wi‑Fi or
+    Ethernet adapter. Example: 192.168.1.105  or  10.169.184.95
+
+  • Base URL for other hosts:
+
+      http://<HOST_IP>:8000
+
+    Example: http://10.169.184.95:8000
+
+  • Optional: If other machines cannot connect, allow inbound TCP port 8000 in
+    your firewall (Windows Defender Firewall or macOS Firewall).
+
+--------------------------------------------------------------------------------
+2. ON ANY OTHER LOCAL HOST (another PC, laptop, phone, same network)
+--------------------------------------------------------------------------------
+
+  • Replace <HOST_IP> with the actual IP of the machine running the API.
+    Example: 10.169.184.95
+
+  • Base URL to use in all requests:
+
+      http://<HOST_IP>:8000
+
+  • Interactive API docs (Swagger UI):
+
+      http://<HOST_IP>:8000/docs
+
+  Open this in a browser to see and try all endpoints.
+
+--------------------------------------------------------------------------------
+2b. NEXT.JS FRONTEND — integrated local pipeline (no separate API)
+--------------------------------------------------------------------------------
+
+  • The app runs the RIQE Python pipeline locally. No NEXT_PUBLIC_RIQE_API_URL needed.
+  • Next.js API routes (/api/roadmap/onboard, /api/roadmap/signal, /api/roadmap/switch-roadmap)
+    spawn the Python pipeline (riqe.cli --daemon) and forward requests. The model and
+    Gemini run in-process; state is kept between requests.
+  • Requirements: Python in PATH, project dependencies (pip install -r requirements.txt),
+    and optional GEMINI_API_KEY in .env for refined suggestions/YouTube queries.
+
+--------------------------------------------------------------------------------
+3. API ENDPOINTS — How to Work With the ML Pipeline
+--------------------------------------------------------------------------------
+
+  All requests are HTTP. Use JSON for POST bodies. Content-Type: application/json.
+
+  ---
+  A) Create a user and get initial roadmap (ONBOARD)
+  ---
+
+    POST  http://<HOST_IP>:8000/onboard
+
+    Body (JSON):
+    {
+      "user_id": "my_user_123",
+      "resume_text": "MS in math, learning quant finance. Strong in stats.",
+      "skill_scores": { "probability": 0.7, "python": 0.6, "statistics": 0.65 },
+      "interests": [ "derivatives", "risk management", "ML for finance" ],
+      "field_of_study": "mathematics",
+      "timeframe_weeks": 12,
+      "learning_history": []
+    }
+
+    Response: { "state": { ... }, "roadmap": { "roadmap_id", "nodes", ... } }
+    Save roadmap_id from the response if you need it for history later.
+
+  ---
+  B) Send a learning signal (updates user state and roadmap)
+  ---
+
+    POST  http://<HOST_IP>:8000/signal
+
+    Body (JSON):
+    {
+      "user_id": "my_user_123",
+      "text": "Studied Ito's lemma and GBM today. Ready for Black-Scholes."
+    }
+
+    Response: Updated roadmap (same shape as in onboard), with new version and
+    quality_score. The ML pipeline classifies topic, strength, and signal type
+    from the text and updates the user's knowledge state and recommendations.
+
+  ---
+  C) Get current knowledge state
+  ---
+
+    GET  http://<HOST_IP>:8000/state/<user_id>
+
+    Example:  GET  http://<HOST_IP>:8000/state/my_user_123
+
+    Response: user_vector, completed_topics, weak_topics, strong_signals.
+
+  ---
+  D) Get roadmap history (all versions after multiple signals)
+  ---
+
+    GET  http://<HOST_IP>:8000/roadmap/<roadmap_id>/history
+
+    Use the roadmap_id returned from onboard or from the last /signal response.
+
+  ---
+  E) Get metrics for a user
+  ---
+
+    GET  http://<HOST_IP>:8000/metrics/<user_id>
+
+  ---
+  F) Switch to a new roadmap context (keep knowledge, new roadmap id)
+  ---
+
+    POST  http://<HOST_IP>:8000/switch-roadmap
+
+    Body: { "user_id": "my_user_123", "new_roadmap_id": "some-new-uuid" }
+
+--------------------------------------------------------------------------------
+4. EXAMPLE: cURL FROM ANOTHER MACHINE (replace 10.169.184.95 with your host IP)
+--------------------------------------------------------------------------------
+
+  # Onboard
+  curl -X POST http://10.169.184.95:8000/onboard -H "Content-Type: application/json" -d "{\"user_id\":\"user1\",\"resume_text\":\"MS math.\",\"skill_scores\":{\"python\":0.7},\"interests\":[\"quant\"],\"field_of_study\":\"mathematics\",\"timeframe_weeks\":12,\"learning_history\":[]}"
+
+  # Send signal
+  curl -X POST http://10.169.184.95:8000/signal -H "Content-Type: application/json" -d "{\"user_id\":\"user1\",\"text\":\"Studied Black-Scholes and Ito lemma today.\"}"
+
+  # Get state
+  curl http://10.169.184.95:8000/state/user1
+
+--------------------------------------------------------------------------------
+5. EXAMPLE: Python requests (run on any machine, same network)
+--------------------------------------------------------------------------------
+
+  import requests
+
+  BASE = "http://10.169.184.95:8000"   # use your host IP
+
+  # Onboard
+  r = requests.post(f"{BASE}/onboard", json={
+      "user_id": "user1",
+      "resume_text": "MS math, learning quant.",
+      "skill_scores": {"python": 0.7, "probability": 0.6},
+      "interests": ["derivatives"],
+      "field_of_study": "mathematics",
+      "timeframe_weeks": 12,
+      "learning_history": []
+  })
+  data = r.json()
+  roadmap_id = data["roadmap"]["roadmap_id"]
+
+  # Send signal (ML pipeline classifies text and updates roadmap)
+  r2 = requests.post(f"{BASE}/signal", json={
+      "user_id": "user1",
+      "text": "Learned GARCH(1,1) for volatility modeling."
+  })
+  updated_roadmap = r2.json()
+
+  # Get state
+  r3 = requests.get(f"{BASE}/state/user1")
+  state = r3.json()
+
+--------------------------------------------------------------------------------
+6. PIPELINE BEHAVIOR (what the ML does)
+--------------------------------------------------------------------------------
+
+  • Onboard: Builds a user embedding from resume + skills + interests, generates
+    an ordered learning roadmap (15 quant topics) with recommendation scores and
+    prerequisites.
+
+  • Signal: Each piece of text is classified into a topic (e.g. stochastic_calculus,
+    derivatives_pricing), a strength (0–1), and a type (new_info / reinforcement /
+    contradiction). The user's knowledge state is updated and the roadmap is
+    re-scored and re-ordered. You get back the updated roadmap with quality_score.
+
+  • State: Current user vector, completed/weak topics, and strong signals.
+
+  • Gemini (when GEMINI_API_KEY is set): The pipeline sends state + roadmap to
+    Gemini. Gemini returns refined, user-friendly suggestions and YouTube search
+    phrases per topic. Each roadmap node includes:
+    - suggestions: list of strings (Next / Resource / Watch items in clear language)
+    - youtube_queries: list of short search phrases for the YouTube API (e.g. use
+      GET /api/youtube?query=<phrase> to show a video for each)
+
+  • All data is in-memory by default. Set SUPABASE_URL and SUPABASE_KEY on the
+    host to persist across restarts.
+
+================================================================================

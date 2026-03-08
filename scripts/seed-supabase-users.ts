@@ -73,11 +73,11 @@ async function upsertProfileAndCourses(
       id: userId,
       email: user.email,
       full_name: user.fullName,
-      onboarding_completed_at: user.onboardingCompletedAt,
+      onboarding_completed: true,
       skills: user.onboarding.skills,
       hobbies: user.onboarding.hobbies,
       hours_per_week: user.onboarding.hoursPerWeek,
-      resume_uploaded: user.onboarding.resumeUploaded,
+      total_hours: user.pastCourses.reduce((sum, c) => sum + c.hours, 0),
       updated_at: new Date().toISOString(),
     },
     { onConflict: "id" }
@@ -114,6 +114,46 @@ async function upsertProfileAndCourses(
     console.error(`Past courses insert failed for ${user.email}:`, coursesError.message);
   } else {
     console.log(`  — Profile + ${user.pastCourses.length} past courses.`);
+  }
+
+  // Upsert profile_data (extensive per-profile data: courses active, hours, streak, skills, past coursework, progress %, topics done)
+  const hoursLearned = user.pastCourses.reduce((sum, c) => sum + c.hours, 0);
+  const overallPct = user.pastCourses.length
+    ? Math.round(
+        user.pastCourses.reduce((sum, c) => sum + c.progress, 0) / user.pastCourses.length
+      )
+    : 0;
+  const pastCoursework = user.pastCourses.map((c, i) => ({
+    title: c.title,
+    category: c.category,
+    progress: c.progress,
+    hours: c.hours,
+    rating: c.rating,
+    color: c.color,
+    sort_order: i,
+  }));
+  const skillsGained: Record<string, number> = {};
+  for (const [k, v] of Object.entries(user.onboarding.skills)) {
+    skillsGained[k] = typeof v === "number" ? Math.min(100, v * 25) : 0;
+  }
+  const { error: profileDataError } = await supabase.from("profile_data").upsert(
+    {
+      user_id: userId,
+      courses_active: [],
+      hours_learned: hoursLearned,
+      current_streak: 0,
+      skills_gained: skillsGained,
+      past_coursework: pastCoursework,
+      overall_progress_percentage: Math.min(100, overallPct),
+      topics_done: 0,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id" }
+  );
+  if (profileDataError) {
+    console.error(`Profile data upsert failed for ${user.email}:`, profileDataError.message);
+  } else {
+    console.log(`  — profile_data upserted.`);
   }
 }
 

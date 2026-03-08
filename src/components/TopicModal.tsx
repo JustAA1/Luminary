@@ -29,8 +29,11 @@ interface TopicModalProps {
     status: "completed" | "in-progress" | "upcoming";
   } | null;
   onClose: () => void;
-  // Optional: called when user clicks an "Up Next" item to jump to that topic
   onNavigate?: (topicId: string) => void;
+  /** From RIQE/Gemini: refined next steps and resources for this topic */
+  suggestions?: string[];
+  /** From RIQE/Gemini: YouTube search phrases for this topic */
+  youtubeQueries?: string[];
 }
 
 const youtubeResources = [
@@ -237,7 +240,7 @@ function MiniDownArrow() {
   );
 }
 
-export default function TopicModal({ topic, onClose, onNavigate }: TopicModalProps) {
+export default function TopicModal({ topic, onClose, onNavigate, suggestions, youtubeQueries }: TopicModalProps) {
   const [activeTab, setActiveTab] = useState<"resources" | "why" | "next">("resources");
 
   if (!topic) return null;
@@ -298,14 +301,72 @@ export default function TopicModal({ topic, onClose, onNavigate }: TopicModalPro
             <div className="animate-fade-in space-y-6">
               <p className="text-sm text-muted">{topic.description}</p>
 
-              {/* YouTube */}
+              {/* Gemini suggestions (from RIQE roadmap) */}
+              {suggestions && suggestions.length > 0 && (
+                <div>
+                  <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+                    <Sparkles size={16} className="text-dallas-green" />
+                    Recommended for you
+                  </h3>
+                  <ul className="space-y-2">
+                    {suggestions.map((s, i) => (
+                      <li key={i} className="text-sm text-muted flex items-start gap-2">
+                        <span className="text-dallas-green mt-0.5">·</span>
+                        <span>{s}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {/* YouTube search phrases from Gemini */}
+              {youtubeQueries && youtubeQueries.length > 0 && (
+                <div>
+                  <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+                    <Youtube size={16} className="text-red-400" />
+                    Search on YouTube
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {youtubeQueries.map((q, i) => (
+                      <a
+                        key={i}
+                        href={`https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-lg border border-surface-border bg-background/50 px-3 py-2 text-xs font-medium text-muted hover:border-dallas-green hover:text-dallas-green transition-colors"
+                      >
+                        {q}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* YouTube (fallback when no Gemini data) */}
               <div>
                 <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
                   <Play size={16} className="text-red-400" />
                   Video Resources
                 </h3>
                 <div className="space-y-3">
-                  {youtubeResources.map((vid, i) => (
+                  {(youtubeQueries && youtubeQueries.length > 0 ? youtubeQueries.slice(0, 3).map((q, i) => (
+                    <a
+                      key={i}
+                      href={`https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex items-center gap-4 rounded-xl border border-surface-border bg-background/30 p-4 hover:border-muted-dark transition-colors cursor-pointer"
+                    >
+                      <div className="flex h-12 w-20 items-center justify-center rounded-lg bg-red-500/10 flex-shrink-0">
+                        <Play size={20} className="text-red-400" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate group-hover:text-dallas-green transition-colors">
+                          {q}
+                        </p>
+                        <p className="text-xs text-muted-dark">YouTube search</p>
+                      </div>
+                      <ExternalLink size={14} className="text-muted-dark flex-shrink-0" />
+                    </a>
+                  )) : youtubeResources.map((vid, i) => (
                     <div
                       key={i}
                       className="group flex items-center gap-4 rounded-xl border border-surface-border bg-background/30 p-4 hover:border-muted-dark transition-colors cursor-pointer"
@@ -323,7 +384,7 @@ export default function TopicModal({ topic, onClose, onNavigate }: TopicModalPro
                       </div>
                       <ExternalLink size={14} className="text-muted-dark flex-shrink-0" />
                     </div>
-                  ))}
+                  )) )}
                 </div>
               </div>
 

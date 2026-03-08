@@ -59,6 +59,8 @@ class RoadmapNodeSchema(BaseModel):
     recommendation_score: float
     signal_score: float
     confidence: float
+    suggestions: list[str] = Field(default_factory=list)  # Gemini: refined next steps, resources
+    youtube_queries: list[str] = Field(default_factory=list)  # For YouTube API / frontend
 
 
 class RoadmapSchema(BaseModel):
