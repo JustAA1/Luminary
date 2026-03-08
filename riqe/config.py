@@ -18,8 +18,8 @@ try:
 except ImportError:
     pass
 
-# ── Gemini ────────────────────────────────────────────────────────────
-GEMINI_API_KEY: Final[str] = os.getenv("GEMINI_API_KEY", "")
+# ── OpenAI ────────────────────────────────────────────────────────────
+OPENAI_API_KEY: Final[str] = os.getenv("OPENAI_API_KEY", "")
 
 # ── Supabase ──────────────────────────────────────────────────────────
 SUPABASE_URL: Final[str] = os.getenv("SUPABASE_URL", "")

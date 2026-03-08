@@ -28,7 +28,7 @@ from riqe.core.roadmap_engine import (
 )
 from riqe.core.signal_processor import SignalProcessor
 from riqe.metrics import MetricsTracker
-from riqe.config import GEMINI_API_KEY
+from riqe.config import OPENAI_API_KEY
 
 
 class RIQEPipeline:
@@ -116,11 +116,11 @@ class RIQEPipeline:
 
         # Phase 1: Load user context
         user_profile = await self._load_user_context(user_id)
-        print(f"RIQE P1: user_profile={'found' if user_profile else 'none'}, GEMINI_KEY={'set' if GEMINI_API_KEY else 'MISSING'}", file=sys.stderr, flush=True)
+        print(f"RIQE P1: user_profile={'found' if user_profile else 'none'}, OPENAI_KEY={'set' if OPENAI_API_KEY else 'MISSING'}", file=sys.stderr, flush=True)
 
-        # Phase 2: Gemini topic generation
+        # Phase 2: OpenAI topic generation
         gemini_topics: list[dict] = []
-        if GEMINI_API_KEY:
+        if OPENAI_API_KEY:
             try:
                 from riqe.integrations.gemini_client import generate_topic_outline
                 existing_ids = [t.topic_id for t in self.topics]
@@ -130,11 +130,11 @@ class RIQEPipeline:
                     prompt=prompt,
                     existing_topic_ids=existing_ids,
                 )
-                print(f"RIQE P2: Gemini generated {len(gemini_topics)} topics", file=sys.stderr, flush=True)
+                print(f"RIQE P2: OpenAI generated {len(gemini_topics)} topics", file=sys.stderr, flush=True)
             except Exception as e:
-                print(f"RIQE P2: Gemini topic gen FAILED: {e}", file=sys.stderr, flush=True)
+                print(f"RIQE P2: OpenAI topic gen FAILED: {e}", file=sys.stderr, flush=True)
         else:
-            print("RIQE P2: SKIPPED (no GEMINI_API_KEY)", file=sys.stderr, flush=True)
+            print("RIQE P2: SKIPPED (no OPENAI_API_KEY)", file=sys.stderr, flush=True)
 
         # Phase 3: ML pipeline scoring
         if gemini_topics:
@@ -153,16 +153,16 @@ class RIQEPipeline:
             roadmap.version = existing_roadmap.version + 1
             roadmap.quality_score = self.roadmap_generator._compute_quality(roadmap)
 
-        # Phase 4: Gemini refinement (language + why_this)
-        if GEMINI_API_KEY:
+        # Phase 4: OpenAI refinement (language + why_this)
+        if OPENAI_API_KEY:
             try:
                 from riqe.integrations.gemini_client import generate_roadmap_items, attach_gemini_suggestions_to_roadmap
                 items = generate_roadmap_items(state, roadmap, user_profile)
                 attach_gemini_suggestions_to_roadmap(roadmap, items)
                 enriched = sum(1 for n in roadmap.nodes if getattr(n, 'why_this', ''))
-                print(f"RIQE P4: Gemini enriched {enriched}/{len(roadmap.nodes)} nodes with why_this", file=sys.stderr, flush=True)
+                print(f"RIQE P4: OpenAI enriched {enriched}/{len(roadmap.nodes)} nodes with why_this", file=sys.stderr, flush=True)
             except Exception as e:
-                print(f"RIQE P4: Gemini refinement FAILED: {e}", file=sys.stderr, flush=True)
+                print(f"RIQE P4: OpenAI refinement FAILED: {e}", file=sys.stderr, flush=True)
 
         return roadmap
 

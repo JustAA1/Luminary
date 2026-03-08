@@ -14,10 +14,7 @@ import urllib.request
 import urllib.error
 from typing import Any, Optional
 
-from riqe.config import GEMINI_API_KEY
-
-GEMINI_MODEL = "gemini-2.0-flash"
-GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
+from riqe.config import OPENAI_API_KEY
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -25,25 +22,27 @@ GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_M
 # ═══════════════════════════════════════════════════════════════════════
 
 def _call_gemini(prompt: str, api_key: str, temperature: float = 0.35, max_tokens: int = 4096) -> str:
-    """Call Gemini REST API with retry on 429; return response text or raise."""
+    """Call OpenAI REST API with retry on 429; return response text or raise."""
     import sys
     import time
 
     payload = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {
-            "temperature": temperature,
-            "maxOutputTokens": max_tokens,
-        },
+        "model": "gpt-4o",
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": temperature,
+        "max_tokens": max_tokens,
     }
     data = json.dumps(payload).encode("utf-8")
 
     max_retries = 3
     for attempt in range(max_retries + 1):
         req = urllib.request.Request(
-            f"{GEMINI_URL}?key={api_key}",
+            "https://api.openai.com/v1/chat/completions",
             data=data,
-            headers={"Content-Type": "application/json"},
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}"
+            },
             method="POST",
         )
         try:
@@ -54,23 +53,20 @@ def _call_gemini(prompt: str, api_key: str, temperature: float = 0.35, max_token
             body = e.read().decode() if e.fp else ""
             if e.code == 429 and attempt < max_retries:
                 wait = 2 ** (attempt + 1)  # 2s, 4s, 8s
-                print(f"RIQE Gemini: 429 rate limited, retry {attempt+1}/{max_retries} in {wait}s", file=sys.stderr, flush=True)
+                print(f"RIQE OpenAI: 429 rate limited, retry {attempt+1}/{max_retries} in {wait}s", file=sys.stderr, flush=True)
                 time.sleep(wait)
                 continue
-            raise RuntimeError(f"Gemini API error {e.code}: {body}") from e
+            raise RuntimeError(f"OpenAI API error {e.code}: {body}") from e
         except urllib.error.URLError as e:
-            raise RuntimeError(f"Gemini request failed: {e}") from e
+            raise RuntimeError(f"OpenAI request failed: {e}") from e
     else:
-        raise RuntimeError("Gemini API: max retries exceeded (429)")
+        raise RuntimeError("OpenAI API: max retries exceeded (429)")
 
     try:
-        candidates = out.get("candidates", [])
-        if not candidates:
+        choices = out.get("choices", [])
+        if not choices:
             return ""
-        parts = candidates[0].get("content", {}).get("parts", [])
-        if not parts:
-            return ""
-        return parts[0].get("text", "").strip()
+        return choices[0].get("message", {}).get("content", "").strip()
     except (KeyError, IndexError):
         return ""
 
@@ -151,9 +147,9 @@ def generate_topic_outline(
     Returns a list of dicts:
     [{"topic_id": "...", "title": "...", "description": "...", "difficulty": 0.5, "prerequisites": [...]}]
 
-    If GEMINI_API_KEY is not set or Gemini fails, returns empty list (pipeline falls back to static topics).
+    If OPENAI_API_KEY is not set or Gemini fails, returns empty list (pipeline falls back to static topics).
     """
-    if not GEMINI_API_KEY:
+    if not OPENAI_API_KEY:
         return []
 
     user_context = _build_user_context_summary(user_profile, state)
@@ -186,7 +182,7 @@ JSON output:"""
     import sys
 
     try:
-        text = _call_gemini(gemini_prompt, GEMINI_API_KEY, temperature=0.4, max_tokens=4096)
+        text = _call_gemini(gemini_prompt, OPENAI_API_KEY, temperature=0.4, max_tokens=4096)
     except Exception as e:
         print(f"RIQE P2-detail: Gemini API call FAILED: {e}", file=sys.stderr, flush=True)
         return []
@@ -278,7 +274,7 @@ def generate_roadmap_items(
 
     Returns: topic_id → {"suggestions": [...], "youtube_queries": [...], "why_this": "..."}
     """
-    if not GEMINI_API_KEY:
+    if not OPENAI_API_KEY:
         return {}
 
     summary = _build_pipeline_summary(state, roadmap, user_profile)
@@ -313,7 +309,7 @@ Input from ML pipeline + user profile:
 JSON output:"""
 
     try:
-        text = _call_gemini(prompt, GEMINI_API_KEY, temperature=0.35, max_tokens=6144)
+        text = _call_gemini(prompt, OPENAI_API_KEY, temperature=0.35, max_tokens=6144)
     except Exception:
         return {}
 
