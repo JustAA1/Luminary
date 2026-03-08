@@ -144,7 +144,7 @@ const STORAGE_KEY = "luminary_roadmap";
 const STORAGE_ID_KEY = "luminary_roadmap_id";
 
 export default function RoadmapPage() {
-  const { userId, loading: profileLoading } = useProfileData();
+  const { userId, skillsGained, loading: profileLoading } = useProfileData();
   const [selectedTopic, setSelectedTopic] = useState<RoadmapTopicUI | null>(null);
   const [roadmap, setRoadmap] = useState<RoadmapTopicUI[]>([]);
   const [roadmapId, setRoadmapId] = useState<string | null>(null);
@@ -246,13 +246,34 @@ export default function RoadmapPage() {
     setCreateBusy(true);
     setErrorToast(null);
     try {
+      // Use actual profile skills if available, else sensible defaults
+      const profileSkills: Record<string, number> = typeof skillsGained === "object" && Object.keys(skillsGained).length > 0
+        ? Object.fromEntries(Object.entries(skillsGained).map(([k, v]) => [k, Math.min(1, Number(v) / 100)]))
+        : { math: 0.5, programming: 0.5, finance: 0.5 };
+
+      // Pull onboarding data from localStorage if available
+      let fieldOfStudy = "Quantitative Finance";
+      let interests = ["derivatives", "risk management", "quantitative finance"];
+      let resumeText = "Quantitative finance: derivatives, risk, statistics, and programming.";
+      let timeframeWeeks = 12;
+      try {
+        const onb = localStorage.getItem("luminary_onboarding");
+        if (onb) {
+          const parsed = JSON.parse(onb);
+          if (parsed.field_of_study) fieldOfStudy = parsed.field_of_study;
+          if (Array.isArray(parsed.interests) && parsed.interests.length > 0) interests = parsed.interests;
+          if (parsed.resume_text) resumeText = parsed.resume_text;
+          if (parsed.timeframe_weeks) timeframeWeeks = parsed.timeframe_weeks;
+        }
+      } catch {}
+
       const res = await riqeOnboard({
         user_id: userId,
-        resume_text: "Quantitative finance: derivatives, risk, statistics, and programming.",
-        skill_scores: { math: 0.5, programming: 0.5, finance: 0.5 },
-        interests: ["derivatives", "risk management", "quantitative finance"],
-        field_of_study: "Quantitative Finance",
-        timeframe_weeks: 12,
+        resume_text: resumeText,
+        skill_scores: profileSkills,
+        interests,
+        field_of_study: fieldOfStudy,
+        timeframe_weeks: timeframeWeeks,
       });
       persistRoadmap(res.roadmap);
       setSuccessToast("Your first quant roadmap is ready.");
@@ -319,7 +340,7 @@ export default function RoadmapPage() {
           />
           <button
             onClick={handleUpdateRoadmap}
-            disabled={updateBusy || !userId}
+            disabled={updateBusy || !userId || !prompt.trim()}
             className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-dallas-green hover:bg-dallas-green-dark disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             {updateBusy ? <><RefreshCw size={15} className="animate-spin" /> Updating…</> : <><Wand2 size={15} /> Update roadmap</>}
@@ -408,6 +429,7 @@ export default function RoadmapPage() {
         onNavigate={handleNavigate}
         suggestions={selectedTopic?.suggestions}
         youtubeQueries={selectedTopic?.youtube_queries}
+        allTopics={roadmap.map(t => ({ id: t.id, title: t.title, status: t.status }))}
       />
 
       {errorToast && (

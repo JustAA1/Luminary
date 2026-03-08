@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   ArrowLeft,
@@ -13,7 +13,10 @@ import {
   CheckCircle2,
   Sparkles,
   X,
+  RefreshCw,
 } from "lucide-react";
+import { riqeOnboard } from "@/lib/riqe";
+import { createClient } from "@/lib/supabase/client";
 
 const skillLevels = [
   { id: "programming", label: "Programming" },
@@ -51,12 +54,15 @@ const steps = [
 ];
 
 export default function OnboardingPage() {
+  const router = useRouter();
   const [step, setStep] = useState(0);
   const [skills, setSkills] = useState<Record<string, number>>({});
   const [selectedHobbies, setSelectedHobbies] = useState<string[]>([]);
   const [hoursPerWeek, setHoursPerWeek] = useState(10);
   const [uploadedFile, setUploadedFile] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const toggleHobby = (hobby: string) => {
     setSelectedHobbies((prev) =>
@@ -78,6 +84,78 @@ export default function OnboardingPage() {
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) setUploadedFile(file.name);
+  };
+
+  const handleComplete = async () => {
+    setSubmitting(true);
+    setSubmitError(null);
+
+    // Normalize skill scores to 0-1 range (sliders are 0-4)
+    const skillScores: Record<string, number> = {};
+    for (const [key, val] of Object.entries(skills)) {
+      skillScores[key] = val / 4;
+    }
+
+    // Derive field of study from selected hobbies
+    const fieldOfStudy = selectedHobbies[0] ?? "Quantitative Finance";
+    const resumeText = uploadedFile
+      ? `Resume uploaded: ${uploadedFile}. Skills: ${Object.keys(skills).join(", ")}. Interests: ${selectedHobbies.join(", ")}.`
+      : `Skills: ${Object.keys(skills).join(", ")}. Interests: ${selectedHobbies.join(", ")}.`;
+
+    // Persist onboarding data so other pages can access it
+    try {
+      localStorage.setItem("luminary_onboarding", JSON.stringify({
+        skill_scores: skillScores,
+        interests: selectedHobbies,
+        field_of_study: fieldOfStudy,
+        timeframe_weeks: Math.ceil(hoursPerWeek / 5) * 4, // rough mapping
+        resume_text: resumeText,
+        hours_per_week: hoursPerWeek,
+      }));
+    } catch {}
+
+    // Get user ID from Supabase auth
+    let userId = "anonymous";
+    try {
+      const supabase = createClient();
+      if (supabase) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.id) userId = user.id;
+      }
+    } catch {}
+
+    // Call the RIQE pipeline to generate initial roadmap
+    try {
+      const res = await riqeOnboard({
+        user_id: userId,
+        resume_text: resumeText,
+        skill_scores: skillScores,
+        interests: selectedHobbies,
+        field_of_study: fieldOfStudy,
+        timeframe_weeks: Math.ceil(hoursPerWeek / 5) * 4,
+      });
+
+      // Persist roadmap so the roadmap page picks it up
+      if (res.roadmap) {
+        const topics = res.roadmap.nodes.map((n: { topic_id: string; title: string; description: string; suggestions?: string[]; youtube_queries?: string[] }, i: number) => ({
+          id: n.topic_id,
+          title: n.title,
+          description: n.description,
+          status: i === 0 ? "in-progress" : "upcoming",
+          subtopics: [],
+          suggestions: n.suggestions ?? [],
+          youtube_queries: n.youtube_queries ?? [],
+        }));
+        localStorage.setItem("luminary_roadmap", JSON.stringify(topics));
+        localStorage.setItem("luminary_roadmap_id", res.roadmap.roadmap_id);
+      }
+    } catch (e) {
+      // Non-blocking: roadmap can be generated later from roadmap page
+      console.warn("Onboard pipeline call failed (non-blocking):", e);
+    }
+
+    setSubmitting(false);
+    router.push("/dashboard");
   };
 
   return (
@@ -425,12 +503,17 @@ export default function OnboardingPage() {
                 <ArrowRight size={16} />
               </button>
             ) : (
-              <Link href="/">
-                <button className="flex items-center gap-2 rounded-xl bg-dallas-green px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-dallas-green/25 hover:bg-dallas-green-dark transition-all duration-200 active:scale-[0.98]">
-                  <Sparkles size={16} />
-                  Start Learning
-                </button>
-              </Link>
+              <button
+                onClick={handleComplete}
+                disabled={submitting}
+                className="flex items-center gap-2 rounded-xl bg-dallas-green px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-dallas-green/25 hover:bg-dallas-green-dark transition-all duration-200 active:scale-[0.98] disabled:opacity-60"
+              >
+                {submitting ? (
+                  <><RefreshCw size={16} className="animate-spin" /> Generating roadmap…</>
+                ) : (
+                  <><Sparkles size={16} /> Start Learning</>
+                )}
+              </button>
             )}
           </div>
         </div>

@@ -34,6 +34,8 @@ interface TopicModalProps {
   suggestions?: string[];
   /** From RIQE/Gemini: YouTube search phrases for this topic */
   youtubeQueries?: string[];
+  /** All topics in the current roadmap (for mapping suggestion text to IDs) */
+  allTopics?: { id: string; title: string; status: "completed" | "in-progress" | "upcoming" }[];
 }
 
 const youtubeResources = [
@@ -240,7 +242,52 @@ function MiniDownArrow() {
   );
 }
 
-export default function TopicModal({ topic, onClose, onNavigate, suggestions, youtubeQueries }: TopicModalProps) {
+/** Build Up Next items dynamically from RIQE suggestions + allTopics */
+function buildDynamicUpNext(
+  suggestions: string[],
+  allTopics: { id: string; title: string; status: "completed" | "in-progress" | "upcoming" }[],
+  currentTopicId: string,
+): UpNextItem[] {
+  const items: UpNextItem[] = [];
+  for (const suggestion of suggestions) {
+    if (items.length >= 3) break;
+    // Try to match suggestion text to an actual roadmap topic title
+    const lower = suggestion.toLowerCase();
+    const match = allTopics.find(
+      (t) => t.id !== currentTopicId && (
+        t.title.toLowerCase().includes(lower) ||
+        lower.includes(t.title.toLowerCase()) ||
+        // Fuzzy: check if most words overlap
+        t.title.toLowerCase().split(/\s+/).filter(w => w.length > 2).some(w => lower.includes(w))
+      )
+    );
+    if (match && !items.some(it => it.topicId === match.id)) {
+      items.push({
+        title: match.title,
+        status: match.status,
+        match: 90 - items.length * 5,
+        topicId: match.id,
+      });
+    }
+  }
+  // If we couldn't match enough, fill from other topics in the roadmap
+  if (items.length < 3) {
+    for (const t of allTopics) {
+      if (items.length >= 3) break;
+      if (t.id === currentTopicId) continue;
+      if (items.some(it => it.topicId === t.id)) continue;
+      items.push({
+        title: t.title,
+        status: t.status,
+        match: 75 - items.length * 3,
+        topicId: t.id,
+      });
+    }
+  }
+  return items;
+}
+
+export default function TopicModal({ topic, onClose, onNavigate, suggestions, youtubeQueries, allTopics }: TopicModalProps) {
   const [activeTab, setActiveTab] = useState<"resources" | "why" | "next">("resources");
 
   if (!topic) return null;
@@ -502,7 +549,15 @@ export default function TopicModal({ topic, onClose, onNavigate, suggestions, yo
 
               {/* Roadmap-style chain of upcoming nodes */}
               <div className="flex flex-col items-center">
-                {(upNextMap[topic.id] ?? fallbackUpNext).map((item, i) => {
+                {(() => {
+                  // Prefer dynamic suggestions from RIQE when available
+                  const dynamicItems = suggestions && suggestions.length > 0 && allTopics && allTopics.length > 0
+                    ? buildDynamicUpNext(suggestions, allTopics, topic.id)
+                    : null;
+                  const upNextItems = dynamicItems && dynamicItems.length > 0
+                    ? dynamicItems
+                    : (upNextMap[topic.id] ?? fallbackUpNext);
+                  return upNextItems.map((item, i) => {
                   const s = miniNodeStyle(item.status);
                   return (
                     <div key={i} className="flex flex-col items-center w-full">
@@ -541,7 +596,8 @@ export default function TopicModal({ topic, onClose, onNavigate, suggestions, yo
                       {i < 2 && <MiniDownArrow />}
                     </div>
                   );
-                })}
+                });
+                })()}
               </div>
             </div>
           )}
