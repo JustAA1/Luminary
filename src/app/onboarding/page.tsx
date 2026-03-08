@@ -19,31 +19,31 @@ import { createClient } from "@/lib/supabase/client";
 import { riqeOnboard } from "@/lib/riqe";
 
 const skillLevels = [
-  { id: "programming", label: "Programming" },
-  { id: "math", label: "Mathematics" },
-  { id: "data-science", label: "Data Science" },
-  { id: "design", label: "UI/UX Design" },
+  { id: "programming", label: "Programming (Python/C++)" },
+  { id: "math", label: "Mathematics & Statistics" },
+  { id: "finance", label: "Finance & Markets" },
+  { id: "stochastic-calc", label: "Stochastic Calculus" },
   { id: "ml", label: "Machine Learning" },
-  { id: "web-dev", label: "Web Development" },
+  { id: "data-science", label: "Data Science" },
 ];
 
 const hobbies = [
-  "Artificial Intelligence",
-  "Mobile Apps",
-  "Game Development",
-  "Cloud Computing",
-  "Cybersecurity",
-  "Blockchain",
-  "Robotics",
-  "Data Visualization",
-  "DevOps",
-  "Open Source",
-  "Internet of Things",
-  "Quantum Computing",
-  "Photography",
-  "Music Production",
-  "Creative Writing",
-  "3D Modeling",
+  "Derivatives Pricing",
+  "Risk Management",
+  "Algorithmic Trading",
+  "Portfolio Optimization",
+  "Fixed Income",
+  "Volatility Modeling",
+  "Statistical Arbitrage",
+  "Monte Carlo Methods",
+  "Time Series Analysis",
+  "Credit Risk",
+  "Market Microstructure",
+  "Quantitative Research",
+  "Options Theory",
+  "Factor Models",
+  "Machine Learning in Finance",
+  "Stochastic Processes",
 ];
 
 const steps = [
@@ -102,12 +102,17 @@ export default function OnboardingPage() {
     setSubmitError(null);
     try {
       const supabase = createClient();
-      const userId = supabase
-        ? (await supabase.auth.getUser()).data.user?.id ?? null
-        : null;
+      if (!supabase) {
+        router.push("/roadmap");
+        return;
+      }
 
-      if (!userId) {
-        // Not signed in or Supabase not configured — navigate to roadmap; pipeline runs from there.
+      const authUser = (await supabase.auth.getUser()).data.user;
+
+      const userId = authUser?.id ?? null;
+      const userEmail = authUser?.email ?? null;
+
+      if (!userId || !userEmail) {
         router.push("/roadmap");
         return;
       }
@@ -125,26 +130,81 @@ export default function OnboardingPage() {
         "Background: quantitative methods, data, and technology.",
       ].filter(Boolean).join(" ");
 
-      await riqeOnboard({
+      // Persist onboarding data to Supabase profiles
+      const profilePayload = {
+        skills: skills,
+        hobbies: selectedHobbies,
+        hours_per_week: hoursPerWeek,
+        onboarding_completed: true,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Try update by id first (matches RLS policy directly)
+      const { data: updatedById, error: errById } = await supabase
+        .from("profiles")
+        .update(profilePayload)
+        .eq("id", userId)
+        .select();
+
+      if (errById) {
+        console.error("Onboarding profile update by id failed:", errById.message);
+      }
+
+      // Fallback: if id-based update returned no rows, try by email
+      if (!updatedById || updatedById.length === 0) {
+        const { data: updatedByEmail, error: errByEmail } = await supabase
+          .from("profiles")
+          .update(profilePayload)
+          .eq("email", userEmail)
+          .select();
+
+        if (errByEmail) {
+          console.error("Onboarding profile update by email failed:", errByEmail.message);
+        }
+        if (!updatedByEmail || updatedByEmail.length === 0) {
+          console.error("Onboarding: no profile row updated. The row may not exist.");
+        }
+      }
+
+      // Persist to profile_data for dashboard
+      const skillsGained: Record<string, number> = {};
+      for (const [k, v] of Object.entries(skills)) {
+        skillsGained[k] = typeof v === "number" ? Math.min(100, v * 25) : 0;
+      }
+      await supabase.from("profile_data").upsert({
         user_id: userId,
-        resume_text: resumeText,
-        skill_scores: skillScores,
-        interests: selectedHobbies.length > 0 ? selectedHobbies : ["quantitative finance"],
-        field_of_study: "Quantitative Finance",
-        timeframe_weeks: hoursToWeeks(hoursPerWeek),
-      });
+        courses_active: [],
+        hours_learned: 0,
+        current_streak: 0,
+        skills_gained: skillsGained,
+        past_coursework: [],
+        overall_progress_percentage: 0,
+        topics_done: 0,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "user_id" });
+
+      // Call ML pipeline (non-blocking for navigation)
+      try {
+        await riqeOnboard({
+          user_id: userId,
+          resume_text: resumeText,
+          skill_scores: skillScores,
+          interests: selectedHobbies.length > 0 ? selectedHobbies : ["quantitative finance"],
+          field_of_study: "Quantitative Finance",
+          timeframe_weeks: hoursToWeeks(hoursPerWeek),
+        });
+      } catch (mlErr) {
+        console.error("ML pipeline error (non-fatal):", mlErr);
+      }
 
       router.push("/roadmap");
     } catch (e) {
-      // Non-fatal: pipeline may fail if Python is not running yet.
-      // Still redirect to /roadmap so the user can generate from there.
-      console.error("Onboarding pipeline error:", e);
+      console.error("Onboarding error:", e);
       setSubmitError(
         e instanceof Error && e.message.length < 200
           ? e.message
           : "Could not initialise the ML pipeline. You can still generate your roadmap from the Roadmap page."
       );
-      // Short delay so the user sees the message, then redirect anyway.
       setTimeout(() => router.push("/roadmap"), 3000);
     } finally {
       setSubmitting(false);
