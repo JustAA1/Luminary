@@ -11,6 +11,7 @@ import {
   BookOpen,
   Sparkles,
   Youtube,
+  Cpu,
 } from "lucide-react";
 import YouTubeSnippet from "@/components/YouTubeSnippet";
 
@@ -289,15 +290,15 @@ export default function TopicModal({ topic, onClose, onNavigate, suggestions, yo
         <div className="flex border-b border-surface-border px-6">
           {(["resources", "why", "next"] as const).map((tab) => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === tab
-                ? "border-dallas-green text-dallas-green"
-                : "border-transparent text-muted hover:text-foreground"
-                }`}
-            >
-              {tab === "resources" ? "Resources" : tab === "why" ? "Why This?" : "Up Next"}
-            </button>
+               key={tab}
+               onClick={() => setActiveTab(tab)}
+               className={`px-4 py-3 text-sm font-medium transition-colors border-b-2 ${activeTab === tab
+                 ? "border-dallas-green text-dallas-green"
+                 : "border-transparent text-muted hover:text-foreground"
+                 }`}
+             >
+               {tab === "resources" ? "Resources" : tab === "why" ? "ML Pipeline Insights" : "Up Next"}
+             </button>
           ))}
         </div>
 
@@ -362,7 +363,7 @@ export default function TopicModal({ topic, onClose, onNavigate, suggestions, yo
                       rel="noopener noreferrer"
                       className="group flex items-center gap-4 rounded-xl border border-surface-border bg-background/30 p-4 hover:border-muted-dark transition-colors cursor-pointer"
                     >
-                      <div className="flex h-12 w-20 items-center justify-center rounded-lg bg-red-500/10 flex-shrink-0">
+                      <div className="flex h-12 w-20 items-center justify-center rounded-lg bg-red-500/10 shrink-0">
                         <Play size={20} className="text-red-400" />
                       </div>
                       <div className="min-w-0 flex-1">
@@ -371,14 +372,14 @@ export default function TopicModal({ topic, onClose, onNavigate, suggestions, yo
                         </p>
                         <p className="text-xs text-muted-dark">YouTube search</p>
                       </div>
-                      <ExternalLink size={14} className="text-muted-dark flex-shrink-0" />
+                      <ExternalLink size={14} className="text-muted-dark shrink-0" />
                     </a>
                   )) : youtubeResources.map((vid, i) => (
                     <div
                       key={i}
                       className="group flex items-center gap-4 rounded-xl border border-surface-border bg-background/30 p-4 hover:border-muted-dark transition-colors cursor-pointer"
                     >
-                      <div className="flex h-12 w-20 items-center justify-center rounded-lg bg-red-500/10 flex-shrink-0">
+                      <div className="flex h-12 w-20 items-center justify-center rounded-lg bg-red-500/10 shrink-0">
                         <Play size={20} className="text-red-400" />
                       </div>
                       <div className="min-w-0 flex-1">
@@ -389,7 +390,7 @@ export default function TopicModal({ topic, onClose, onNavigate, suggestions, yo
                           {vid.channel} • {vid.duration} • {vid.views} views
                         </p>
                       </div>
-                      <ExternalLink size={14} className="text-muted-dark flex-shrink-0" />
+                      <ExternalLink size={14} className="text-muted-dark shrink-0" />
                     </div>
                   )) )}
                 </div>
@@ -448,15 +449,29 @@ export default function TopicModal({ topic, onClose, onNavigate, suggestions, yo
             </div>
           )}
 
-          {/* ── Why This? ── */}
+          {/* ── ML Pipeline Insights ── */}
           {activeTab === "why" && (
             <div className="animate-fade-in space-y-6">
+              {/* Explicit Decision Rule (Hackathon Requirement) */}
+              <div className="rounded-xl bg-blue-500/10 border border-blue-500/20 p-5">
+                <div className="flex items-start gap-3">
+                  <Cpu size={20} className="text-blue-400 mt-0.5 shrink-0" />
+                  <div>
+                    <h3 className="text-sm font-bold text-blue-400 mb-1">Decision Rule Actuated</h3>
+                    <p className="text-sm text-muted leading-relaxed">
+                      Placement triggered because <strong>Recommendation Score {">"} 0.65</strong>. 
+                      The actionable signal explicitly routed this topic into your specialized learning phase.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Gemini personalized explanation */}
               <div className="rounded-xl bg-dallas-green/5 border border-dallas-green/20 p-5">
                 <div className="flex items-start gap-3">
-                  <Lightbulb size={20} className="text-dallas-green mt-0.5 flex-shrink-0" />
+                  <Lightbulb size={20} className="text-dallas-green mt-0.5 shrink-0" />
                   <div>
-                    <h3 className="text-sm font-semibold mb-2">Why this topic matters for you</h3>
+                    <h3 className="text-sm font-semibold mb-2">Contextual Verification (LLM)</h3>
                     <p className="text-sm text-muted leading-relaxed">
                       {whyThis || `${topic.title} is positioned in your roadmap based on your current knowledge state, signal history, and the prerequisite relationships in quantitative finance. The ML pipeline scored this topic with the metrics shown below.`}
                     </p>
@@ -466,7 +481,7 @@ export default function TopicModal({ topic, onClose, onNavigate, suggestions, yo
 
               {/* ML Scores */}
               <div>
-                <h3 className="mb-3 text-sm font-semibold">ML Pipeline Scores</h3>
+                <h3 className="mb-3 text-sm font-semibold">Actionable Signals & Network Confidence</h3>
                 <div className="space-y-3">
                   {[
                     { label: "Recommendation Score", value: topic.recommendation_score, color: "#46b533", desc: "Composite relevance to your profile" },

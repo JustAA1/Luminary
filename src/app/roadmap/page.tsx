@@ -518,12 +518,8 @@ export default function RoadmapPage() {
         crypto.randomUUID?.() ?? `rm-${Date.now()}`,
         newCtx.trim(),
       );
-      console.log("[handleCreateNew] raw response:", JSON.stringify(res).slice(0, 500));
-      console.log("[handleCreateNew] res.roadmap:", res?.roadmap ? `nodes=${res.roadmap.nodes?.length}` : "UNDEFINED");
-      console.log("[handleCreateNew] res.nodes:", res?.nodes?.length ?? "no direct nodes");
       // The response is OnboardResponse: { state, roadmap: RoadmapResponse }
-      const rm = res.roadmap ?? res;
-      console.log("[handleCreateNew] final rm.nodes:", rm?.nodes?.length);
+      const rm = res.roadmap;
       persistRoadmap(rm);
       setNewCtx("");
       showSuccess("New roadmap created.");

@@ -200,11 +200,13 @@ class RoadmapGenerator:
             # Cosine similarity between user vector and topic embedding
             if topic.embedding_128 is not None:
                 topic_vec = torch.tensor(topic.embedding_128, dtype=torch.float32)
-                cosine_sim = float(
+                raw_cosine_sim = float(
                     F.cosine_similarity(
                         user_vec.unsqueeze(0), topic_vec.unsqueeze(0)
                     )
                 )
+                # Normalize from [-1.0, 1.0] to [0.0, 1.0]
+                cosine_sim = (raw_cosine_sim + 1.0) / 2.0
             else:
                 cosine_sim = 0.0
 
@@ -238,7 +240,7 @@ class RoadmapGenerator:
         5. Build Roadmap
         """
         scored = self.score_topics(state)
-        top_k = scored[:TOP_K_ROADMAP]
+        top_k = scored[:int(TOP_K_ROADMAP)]
 
         # Remove completed
         topic_ids = self.prereq_graph.filter_known(
@@ -317,15 +319,17 @@ class RoadmapGenerator:
             tid = gt.get("topic_id", f"gemini_topic_{len(dynamic_topics)}")
             topic = Topic(
                 topic_id=tid,
-                title=gt.get("title", tid.replace("_", " ").title()),
-                description=gt.get("description", ""),
-                difficulty=float(gt.get("difficulty", 0.5)),
+                title=str(gt.get("title") or tid.replace("_", " ").title()),
+                description=str(gt.get("description") or ""),
+                difficulty=float(gt.get("difficulty") or 0.5),
             )
             # Compute embeddings if encoder available
             if text_encoder is not None:
                 full_text = f"{topic.title}. {topic.description}"
-                topic.embedding = text_encoder.encode(full_text)
-                topic.embedding_128 = topic.embedding.reshape(3, 128).mean(axis=0)
+                emb = text_encoder.encode(full_text)
+                if emb is not None:
+                    topic.embedding = emb
+                    topic.embedding_128 = emb.reshape(3, 128).mean(axis=0)
             dynamic_topics.append(topic)
 
         # Register prerequisites from Gemini output into the graph
@@ -371,7 +375,7 @@ class RoadmapGenerator:
         from riqe.config import TOP_K_ROADMAP
         nodes: list[RoadmapNode] = []
         score_map = {t.topic_id: s for t, s in scored}
-        for tid in sorted_ids[:TOP_K_ROADMAP]:
+        for tid in sorted_ids[:int(TOP_K_ROADMAP)]:
             topic = topic_map.get(tid)
             if topic is None:
                 continue

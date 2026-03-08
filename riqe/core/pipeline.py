@@ -138,6 +138,26 @@ class RIQEPipeline:
 
         # Phase 3: ML pipeline scoring
         if gemini_topics:
+            # First, treat the prompt itself as a foundational strong signal for these topics
+            import uuid
+            from riqe.core.knowledge_state import RIQESignal
+            from datetime import datetime
+            if prompt:
+                for gt in gemini_topics:
+                    tid = gt.get("topic_id", "")
+                    if tid:
+                        sig = RIQESignal(
+                            text=prompt,
+                            timestamp=datetime.utcnow(),
+                            topic=tid,
+                            strength=0.9,  # Strong initial signal from direct user request
+                            is_new_info=True,
+                            trend="stable",
+                            reliability_score=0.9,
+                            signal_type="new_info"
+                        )
+                        state.strong_signals.append(sig)
+
             # Use dynamic topics from Gemini + static topics, merged and scored
             roadmap = self.roadmap_generator.generate_with_dynamic_topics(
                 state, gemini_topics, text_encoder=self.text_encoder,
