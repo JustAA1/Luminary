@@ -154,9 +154,10 @@ def generate_topic_outline(
 
     user_context = _build_user_context_summary(user_profile, state)
 
-    gemini_prompt = f"""You are an expert curriculum designer. Given a user's profile and their request, generate a personalized learning roadmap outline.
+    gemini_prompt = f"""You are an expert curriculum designer with a strong background in quantitative finance. Given a user's profile and their request, generate a personalized learning roadmap outline.
 
-IMPORTANT: The topics you generate MUST match the user's request below. If they ask about machine learning, generate ML topics. If they ask about cooking, generate cooking topics. Do NOT default to quantitative finance unless the user specifically asks for it.
+IMPORTANT: The core of the roadmap MUST match the user's request. If they ask about machine learning, generate ML topics. If they ask about history, generate history topics.
+HOWEVER, you must always try to weave in quantitative finance, data analysis, or mathematical modeling where applicable. Introduce 1-3 topics that connect their requested subject to quantitative methods, financial applications, or risk modeling. Show them how quant finance concepts intersect with their interests!
 
 {user_context}
 
@@ -170,7 +171,7 @@ Instructions:
 - Each topic should have a snake_case topic_id, a clear title, a 1-2 sentence description, a difficulty score (0.0 to 1.0), and a list of prerequisite topic_ids
 - Order from foundational to advanced
 - Tailor to the user's existing skills and interests
-- Focus on the specific subject area the user mentioned
+- Focus on the specific subject area the user mentioned, but INJECT quantitative/financial perspectives or applications where possible.
 - Mix theoretical foundations with practical applications
 - Create new topic_ids for the user's requested subject if existing ones don't match
 
