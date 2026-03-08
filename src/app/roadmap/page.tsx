@@ -697,19 +697,8 @@ export default function RoadmapPage() {
         <div className="animate-fade-in">
           <PipelineInfoBanner />
 
-          {/* Action cards */}
+          {/* Action cards — Generate above Edit */}
           <div className="mb-10 flex flex-col gap-5">
-            <div className="glass-card p-5 space-y-3">
-              <h3 className="text-sm font-semibold flex items-center gap-2"><Wand2 size={15} className="text-dallas-green" />Update current roadmap</h3>
-              <p className="text-xs text-muted">Enter a prompt &mdash; your text is classified by the local RIQESignalClassifier, updates your knowledge state, and the roadmap is rebuilt. Gemini re-enriches all topics.</p>
-              <textarea value={prompt} onChange={e => setPrompt(e.target.value)} placeholder='e.g. "I want to focus on Black-Scholes and volatility"' rows={3}
-                className="w-full rounded-xl border border-surface-border bg-background/50 px-4 py-3 text-sm placeholder:text-muted-dark focus:border-dallas-green focus:outline-none focus:ring-1 focus:ring-dallas-green/40 transition-all resize-none" />
-              <button onClick={handleUpdate} disabled={updateBusy || !userId}
-                className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-dallas-green hover:bg-dallas-green-dark disabled:opacity-50 disabled:cursor-not-allowed transition-all">
-                {updateBusy ? <><RefreshCw size={15} className="animate-spin" />Updating&hellip;</> : <><Wand2 size={15} />Update roadmap</>}
-              </button>
-            </div>
-
             <div className="glass-card p-5 space-y-3">
               <h3 className="text-sm font-semibold flex items-center gap-2"><PlusCircle size={15} className="text-dallas-green" />{roadmap.length === 0 ? "Generate your roadmap" : "Create new roadmap"}</h3>
               <p className="text-xs text-muted">{roadmap.length === 0 ? "Describe your background or goals — the local ML pipeline uses this as profile context to build your tree." : "Start a fresh path for a different quant area. Your current roadmap will be saved to history."}</p>
@@ -720,6 +709,17 @@ export default function RoadmapPage() {
               <button onClick={roadmap.length === 0 ? handleGenerateFirst : handleCreateNew} disabled={createBusy || !userId}
                 className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
                 {createBusy ? <><RefreshCw size={15} className="animate-spin" />{roadmap.length === 0 ? "Generating\u2026" : "Creating\u2026"}</> : <><PlusCircle size={15} />{roadmap.length === 0 ? "Generate roadmap" : "Create new roadmap"}</>}
+              </button>
+            </div>
+
+            <div className="glass-card p-5 space-y-3">
+              <h3 className="text-sm font-semibold flex items-center gap-2"><Wand2 size={15} className="text-dallas-green" />Update current roadmap</h3>
+              <p className="text-xs text-muted">Enter a prompt &mdash; your text is classified by the local RIQESignalClassifier, updates your knowledge state, and the roadmap is rebuilt. Gemini re-enriches all topics.</p>
+              <textarea value={prompt} onChange={e => setPrompt(e.target.value)} placeholder='e.g. "I want to focus on Black-Scholes and volatility"' rows={3}
+                className="w-full rounded-xl border border-surface-border bg-background/50 px-4 py-3 text-sm placeholder:text-muted-dark focus:border-dallas-green focus:outline-none focus:ring-1 focus:ring-dallas-green/40 transition-all resize-none" />
+              <button onClick={handleUpdate} disabled={updateBusy || !userId}
+                className="flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-dallas-green hover:bg-dallas-green-dark disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                {updateBusy ? <><RefreshCw size={15} className="animate-spin" />Updating&hellip;</> : <><Wand2 size={15} />Update roadmap</>}
               </button>
             </div>
           </div>
