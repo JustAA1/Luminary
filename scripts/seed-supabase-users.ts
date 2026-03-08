@@ -117,12 +117,8 @@ async function upsertProfileAndCourses(
   }
 
   // Upsert profile_data (extensive per-profile data: courses active, hours, streak, skills, past coursework, progress %, topics done)
-  const hoursLearned = user.pastCourses.reduce((sum, c) => sum + c.hours, 0);
-  const overallPct = user.pastCourses.length
-    ? Math.round(
-        user.pastCourses.reduce((sum, c) => sum + c.progress, 0) / user.pastCourses.length
-      )
-    : 0;
+  const hoursLearned = user.hoursLearned;
+  const overallPct = user.overallProgressPercentage;
   const pastCoursework = user.pastCourses.map((c, i) => ({
     title: c.title,
     category: c.category,
@@ -141,11 +137,11 @@ async function upsertProfileAndCourses(
       user_id: userId,
       courses_active: [],
       hours_learned: hoursLearned,
-      current_streak: 0,
+      current_streak: user.currentStreak,
       skills_gained: skillsGained,
       past_coursework: pastCoursework,
       overall_progress_percentage: Math.min(100, overallPct),
-      topics_done: 0,
+      topics_done: user.topicsDone,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "user_id" }

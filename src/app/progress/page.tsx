@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { BarChart3, TrendingUp, Clock, Award, Flame, Target, Loader2, Sparkles, CalendarDays } from "lucide-react";
+import { BarChart3, TrendingUp, Clock, Award, Flame, Target, Loader2, Sparkles, CalendarDays, Map, Zap, Star } from "lucide-react";
 import { useProfileData } from "@/hooks/useProfileData";
 
 const STORAGE_KEY = "luminary_roadmap";
@@ -43,14 +43,14 @@ function computeMonthly(topicsDone: number) {
 }
 
 function computeAchievements(topicsDone: number, streak: number, totalHours: number, roadmapCount: number) {
-  const achs: { title: string; desc: string; date: string; icon: string }[] = [];
-  if (roadmapCount > 0) achs.push({ title: "First Roadmap Generated", desc: "Created your personalized learning path", date: "Feb 2026", icon: "🗺️" });
-  if (topicsDone >= 1) achs.push({ title: "First Topic Completed", desc: "Finished your first learning topic", date: "Feb 2026", icon: "🎯" });
-  if (topicsDone >= 5) achs.push({ title: "5 Topics Completed", desc: "Completed five topics on your roadmap", date: "Mar 2026", icon: "🏆" });
-  if (streak >= 3) achs.push({ title: `${streak}-Day Streak`, desc: `Maintained a ${streak}-day learning streak`, date: "Mar 2026", icon: "🔥" });
-  if (totalHours >= 10) achs.push({ title: "10 Hours Logged", desc: "Spent 10+ hours learning", date: "Mar 2026", icon: "⏱️" });
-  if (totalHours >= 50) achs.push({ title: "50 Hours Logged", desc: "Reached 50 hours of study time", date: "Mar 2026", icon: "⭐" });
-  if (achs.length === 0) achs.push({ title: "Getting Started", desc: "Begin your learning journey to earn achievements", date: "Mar 2026", icon: "🚀" });
+  const achs: { title: string; desc: string; date: string; icon: any; color: string }[] = [];
+  if (roadmapCount > 0) achs.push({ title: "First Roadmap Generated", desc: "Created your personalized learning path", date: "Feb 2026", icon: Map, color: "text-blue-400" });
+  if (topicsDone >= 1) achs.push({ title: "First Topic Completed", desc: "Finished your first learning topic", date: "Feb 2026", icon: Target, color: "text-dallas-green" });
+  if (topicsDone >= 5) achs.push({ title: "5 Topics Completed", desc: "Completed five topics on your roadmap", date: "Mar 2026", icon: Award, color: "text-purple-400" });
+  if (streak >= 3) achs.push({ title: `${streak}-Day Streak`, desc: `Maintained a ${streak}-day learning streak`, date: "Mar 2026", icon: Zap, color: "text-yellow-400" });
+  if (totalHours >= 10) achs.push({ title: "10 Hours Logged", desc: "Spent 10+ hours learning", date: "Mar 2026", icon: Clock, color: "text-emerald-400" });
+  if (totalHours >= 50) achs.push({ title: "50 Hours Logged", desc: "Reached 50 hours of study time", date: "Mar 2026", icon: Star, color: "text-amber-400" });
+  if (achs.length === 0) achs.push({ title: "Getting Started", desc: "Begin your learning journey to earn achievements", date: "Mar 2026", icon: Target, color: "text-muted" });
   return achs;
 }
 
@@ -221,9 +221,9 @@ export default function ProgressPage() {
               const pct = maxHours > 0 ? (d.hours / maxHours) * 100 : 0;
               const hitTarget = d.hours >= d.target;
               return (
-                <div key={i} className="flex flex-1 flex-col items-center gap-2">
+                <div key={i} className="flex flex-1 flex-col items-center gap-2 h-full pt-4">
                   <span className="text-[10px] font-semibold text-dallas-green">{d.hours}h</span>
-                  <div className="w-full relative" style={{ height: "100%" }}>
+                  <div className="w-full relative flex-1">
                     <div
                       className="absolute bottom-0 w-full rounded-t-lg transition-all duration-500"
                       style={{
@@ -233,10 +233,12 @@ export default function ProgressPage() {
                           : "linear-gradient(to top, rgba(113,113,122,0.4), rgba(113,113,122,0.15))",
                       }}
                     />
-                    <div
-                      className="absolute w-full border-t border-dashed border-dallas-green/30"
-                      style={{ bottom: `${(d.target / maxHours) * 100}%` }}
-                    />
+                    {maxHours > 0 && d.target > 0 && (
+                      <div
+                        className="absolute w-full border-t border-dashed border-dallas-green/30"
+                        style={{ bottom: `${(d.target / maxHours) * 100}%` }}
+                      />
+                    )}
                   </div>
                   <span className="text-[10px] text-muted">{d.day}</span>
                 </div>
@@ -345,7 +347,9 @@ export default function ProgressPage() {
                 key={i}
                 className="flex items-center gap-4 rounded-xl border border-surface-border bg-background/30 p-4 hover:border-yellow-500/30 hover:bg-surface-hover/30 transition-colors"
               >
-                <span className="text-2xl">{ach.icon}</span>
+                <div className="h-9 w-9 rounded-lg bg-yellow-500/10 flex items-center justify-center flex-shrink-0">
+                  <ach.icon size={16} className={ach.color || "text-yellow-400"} />
+                </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold">{ach.title}</p>
                   <p className="text-xs text-muted-dark truncate">{ach.desc}</p>

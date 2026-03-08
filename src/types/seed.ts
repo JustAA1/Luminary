@@ -26,4 +26,8 @@ export interface SeedUser {
   onboardingCompletedAt: string; // ISO date
   onboarding: OnboardingData;
   pastCourses: PastCourse[];
+  hoursLearned: number;
+  currentStreak: number;
+  topicsDone: number;
+  overallProgressPercentage: number;
 }

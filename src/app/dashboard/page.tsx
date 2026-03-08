@@ -236,7 +236,7 @@ export default function HomePage() {
         ) : (
           <div className="rounded-2xl border border-surface-border bg-surface/50 p-6 space-y-4">
             {skillEntries.map(([skill, level]) => {
-              const pct = Math.min(100, Math.round((level / 4) * 100));
+              const pct = Math.min(100, Math.round(Number(level) || 0));
               return (
                 <div key={skill}>
                   <div className="flex items-center justify-between mb-1">

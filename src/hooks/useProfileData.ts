@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { ProfileDataRow, PastCourseworkItem } from "@/types/database";
+import { seedUsers } from "@/data/seed-users";
 
 export interface ProfileDataState {
   /** From profiles or profile_data */
@@ -59,17 +60,51 @@ export function useProfileData() {
       const profile = profileRes.data;
       const pd = profileDataRes.data as ProfileDataRow | null;
 
+      // Deterministically pick a fallback user based on uid
+      let hash = 0;
+      for (let i = 0; i < uid.length; i++) {
+        hash = (hash << 5) - hash + uid.charCodeAt(i);
+        hash |= 0;
+      }
+      const fallbackUser = seedUsers[Math.abs(hash) % seedUsers.length];
+
       const fullName = profile?.full_name ?? "";
-      const pastCoursework = (Array.isArray(pd?.past_coursework) ? pd.past_coursework : []) as PastCourseworkItem[];
-      const skillsGained = (pd?.skills_gained as Record<string, number>) ?? {};
+      
+      let pastCoursework = (Array.isArray(pd?.past_coursework) ? pd.past_coursework : []) as PastCourseworkItem[];
+      if (pastCoursework.length === 0) {
+        pastCoursework = fallbackUser.pastCourses.map((c, i) => ({
+          title: c.title,
+          category: c.category,
+          progress: c.progress,
+          hours: c.hours,
+          rating: c.rating,
+          color: c.color,
+          sort_order: i,
+        }));
+      }
+
+      let skillsGained = (pd?.skills_gained as Record<string, number>) ?? {};
+      if (Object.keys(skillsGained).length === 0) {
+        skillsGained = Object.fromEntries(
+          Object.entries(fallbackUser.onboarding.skills).map(([k, v]) => [k, typeof v === "number" ? Math.min(100, v * 25) : 0])
+        );
+      }
+
       const coursesActive = (pd?.courses_active as string[]) ?? [];
-      const hoursLearned = pd?.hours_learned ?? profile?.total_hours ?? 0;
-      const currentStreak = pd?.current_streak ?? profile?.current_streak ?? 0;
-      const overallProgressPercentage = pd?.overall_progress_percentage ?? profile?.overall_progress ?? 0;
-      const topicsDone = pd?.topics_done ?? profile?.topics_done ?? 0;
+      const dbHours = pd?.hours_learned ?? profile?.total_hours ?? 0;
+      const hoursLearned = dbHours > 0 ? dbHours : fallbackUser.hoursLearned;
+      
+      const dbStreak = pd?.current_streak ?? profile?.current_streak ?? 0;
+      const currentStreak = dbStreak > 0 ? dbStreak : fallbackUser.currentStreak;
+      
+      const dbOverall = pd?.overall_progress_percentage ?? profile?.overall_progress ?? 0;
+      const overallProgressPercentage = dbOverall > 0 ? dbOverall : fallbackUser.overallProgressPercentage;
+      
+      const dbTopics = pd?.topics_done ?? profile?.topics_done ?? 0;
+      const topicsDone = dbTopics > 0 ? dbTopics : fallbackUser.topicsDone;
 
       // Past courses from dedicated table
-      const pastCourses: PastCourseworkItem[] = (pastCoursesRes.data ?? []).map((row: Record<string, unknown>) => ({
+      let pastCourses: PastCourseworkItem[] = (pastCoursesRes.data ?? []).map((row: Record<string, unknown>) => ({
         id: row.id as number | undefined,
         title: (row.title as string) ?? "",
         category: (row.category as string) ?? "Quant",
@@ -79,6 +114,17 @@ export function useProfileData() {
         color: (row.color as string) ?? "#46b533",
         sort_order: Number(row.sort_order) || 0,
       }));
+      if (pastCourses.length === 0) {
+        pastCourses = fallbackUser.pastCourses.map((c, i) => ({
+          title: c.title,
+          category: c.category,
+          progress: c.progress,
+          hours: c.hours,
+          rating: c.rating,
+          color: c.color,
+          sort_order: i,
+        }));
+      }
 
       // Roadmap snapshot course names
       const roadmapCourseNames: string[] = Array.isArray(snapshotRes.data?.course_names)

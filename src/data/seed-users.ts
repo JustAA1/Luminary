@@ -23,6 +23,10 @@ export const seedUsers: SeedUser[] = [
       hoursPerWeek: 12,
       resumeUploaded: true,
     },
+    hoursLearned: 142,
+    currentStreak: 12,
+    topicsDone: 24,
+    overallProgressPercentage: 68,
     pastCourses: [
       {
         id: 1,
@@ -98,6 +102,10 @@ export const seedUsers: SeedUser[] = [
       hoursPerWeek: 8,
       resumeUploaded: true,
     },
+    hoursLearned: 315,
+    currentStreak: 45,
+    topicsDone: 42,
+    overallProgressPercentage: 85,
     pastCourses: [
       {
         id: 1,
@@ -164,6 +172,10 @@ export const seedUsers: SeedUser[] = [
       hoursPerWeek: 10,
       resumeUploaded: false,
     },
+    hoursLearned: 28,
+    currentStreak: 3,
+    topicsDone: 5,
+    overallProgressPercentage: 15,
     pastCourses: [
       {
         id: 1,
