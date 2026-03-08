@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   ArrowLeft,
@@ -13,7 +13,10 @@ import {
   CheckCircle2,
   Sparkles,
   X,
+  Loader2,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { riqeOnboard } from "@/lib/riqe";
 
 const skillLevels = [
   { id: "programming", label: "Programming" },
@@ -50,13 +53,27 @@ const steps = [
   { icon: FileUp, label: "Resume", desc: "Upload your background" },
 ];
 
+/** Convert 0-4 integer slider value to 0.0-1.0 float for the ML pipeline. */
+function normalizeSkill(v: number): number {
+  return Math.min(1, Math.max(0, v / 4));
+}
+
+/** Derive a learning timeframe in weeks from hours-per-week commitment. */
+function hoursToWeeks(hoursPerWeek: number): number {
+  // ~200 total hours to cover the roadmap; clamp 4–52 weeks.
+  return Math.min(52, Math.max(4, Math.round(200 / Math.max(1, hoursPerWeek))));
+}
+
 export default function OnboardingPage() {
+  const router = useRouter();
   const [step, setStep] = useState(0);
   const [skills, setSkills] = useState<Record<string, number>>({});
   const [selectedHobbies, setSelectedHobbies] = useState<string[]>([]);
   const [hoursPerWeek, setHoursPerWeek] = useState(10);
   const [uploadedFile, setUploadedFile] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const toggleHobby = (hobby: string) => {
     setSelectedHobbies((prev) =>
@@ -78,6 +95,60 @@ export default function OnboardingPage() {
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) setUploadedFile(file.name);
+  };
+
+  const handleStartLearning = async () => {
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const supabase = createClient();
+      const userId = supabase
+        ? (await supabase.auth.getUser()).data.user?.id ?? null
+        : null;
+
+      if (!userId) {
+        // Not signed in or Supabase not configured — navigate to roadmap; pipeline runs from there.
+        router.push("/roadmap");
+        return;
+      }
+
+      // Normalize skill scores from 0-4 integers to 0.0-1.0 floats.
+      const skillScores: Record<string, number> = {};
+      for (const s of skillLevels) {
+        skillScores[s.id] = normalizeSkill(skills[s.id] ?? 0);
+      }
+
+      // Build resume text from uploaded filename + interests as context.
+      const resumeText = [
+        uploadedFile ? `Resume: ${uploadedFile}` : "",
+        selectedHobbies.length > 0 ? `Interests: ${selectedHobbies.join(", ")}` : "",
+        "Background: quantitative methods, data, and technology.",
+      ].filter(Boolean).join(" ");
+
+      await riqeOnboard({
+        user_id: userId,
+        resume_text: resumeText,
+        skill_scores: skillScores,
+        interests: selectedHobbies.length > 0 ? selectedHobbies : ["quantitative finance"],
+        field_of_study: "Quantitative Finance",
+        timeframe_weeks: hoursToWeeks(hoursPerWeek),
+      });
+
+      router.push("/roadmap");
+    } catch (e) {
+      // Non-fatal: pipeline may fail if Python is not running yet.
+      // Still redirect to /roadmap so the user can generate from there.
+      console.error("Onboarding pipeline error:", e);
+      setSubmitError(
+        e instanceof Error && e.message.length < 200
+          ? e.message
+          : "Could not initialise the ML pipeline. You can still generate your roadmap from the Roadmap page."
+      );
+      // Short delay so the user sees the message, then redirect anyway.
+      setTimeout(() => router.push("/roadmap"), 3000);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -399,6 +470,13 @@ export default function OnboardingPage() {
               <p className="mt-4 text-center text-xs text-muted-dark">
                 Your data is encrypted and only used to improve recommendations.
               </p>
+
+              {/* Inline error shown if pipeline init fails */}
+              {submitError && (
+                <div className="mt-4 rounded-xl border border-red-500/30 bg-red-950/60 px-4 py-3 text-xs text-red-300">
+                  {submitError}
+                </div>
+              )}
             </div>
           )}
 
@@ -425,12 +503,23 @@ export default function OnboardingPage() {
                 <ArrowRight size={16} />
               </button>
             ) : (
-              <Link href="/">
-                <button className="flex items-center gap-2 rounded-xl bg-dallas-green px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-dallas-green/25 hover:bg-dallas-green-dark transition-all duration-200 active:scale-[0.98]">
-                  <Sparkles size={16} />
-                  Start Learning
-                </button>
-              </Link>
+              <button
+                onClick={handleStartLearning}
+                disabled={submitting}
+                className="flex items-center gap-2 rounded-xl bg-dallas-green px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-dallas-green/25 hover:bg-dallas-green-dark transition-all duration-200 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Building your roadmap…
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={16} />
+                    Start Learning
+                  </>
+                )}
+              </button>
             )}
           </div>
         </div>

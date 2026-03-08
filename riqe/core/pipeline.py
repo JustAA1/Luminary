@@ -128,22 +128,28 @@ class RIQEPipeline:
         self._states[user_id] = state
         self._roadmaps[roadmap.roadmap_id] = roadmap
 
-        # Persist
-        await db.save_knowledge_state(user_id, state.to_dict())
-        await db.save_roadmap(roadmap.to_dict())
-        await db.save_roadmap_snapshot(
-            roadmap.user_id,
-            roadmap.roadmap_id,
-            [n.title for n in roadmap.nodes],
-        )
+        # Persist (best-effort — don't fail onboard if Supabase is unavailable)
+        try:
+            await db.save_knowledge_state(user_id, state.to_dict())
+            await db.save_roadmap(roadmap.to_dict())
+            await db.save_roadmap_snapshot(
+                roadmap.user_id,
+                roadmap.roadmap_id,
+                [n.title for n in roadmap.nodes],
+            )
+        except Exception:
+            pass
 
         # Log initial metrics
-        self.metrics.log_roadmap_update(
-            user_id=user_id,
-            roadmap=roadmap,
-            state=state,
-            version=1,
-        )
+        try:
+            self.metrics.log_roadmap_update(
+                user_id=user_id,
+                roadmap=roadmap,
+                state=state,
+                version=1,
+            )
+        except Exception:
+            pass
 
         return state, roadmap
 
@@ -190,31 +196,37 @@ class RIQEPipeline:
 
         self._roadmaps[updated.roadmap_id] = updated
 
-        # Persist
-        await db.save_knowledge_state(user_id, state.to_dict())
-        await db.save_roadmap(updated.to_dict())
-        await db.save_roadmap_snapshot(
-            updated.user_id,
-            updated.roadmap_id,
-            [n.title for n in updated.nodes],
-        )
-        await db.save_signal(user_id, {
-            "text": signal.text,
-            "topic": signal.topic,
-            "strength": signal.strength,
-            "signal_type": signal.signal_type,
-            "trend": signal.trend,
-            "reliability_score": signal.reliability_score,
-            "timestamp": signal.timestamp.isoformat(),
-        })
+        # Persist (best-effort — don't crash if Supabase is unavailable)
+        try:
+            await db.save_knowledge_state(user_id, state.to_dict())
+            await db.save_roadmap(updated.to_dict())
+            await db.save_roadmap_snapshot(
+                updated.user_id,
+                updated.roadmap_id,
+                [n.title for n in updated.nodes],
+            )
+            await db.save_signal(user_id, {
+                "text": signal.text,
+                "topic": signal.topic,
+                "strength": signal.strength,
+                "signal_type": signal.signal_type,
+                "trend": signal.trend,
+                "reliability_score": signal.reliability_score,
+                "timestamp": signal.timestamp.isoformat(),
+            })
+        except Exception:
+            pass
 
         # Log metrics
-        self.metrics.log_roadmap_update(
-            user_id=user_id,
-            roadmap=updated,
-            state=state,
-            version=updated.version,
-        )
+        try:
+            self.metrics.log_roadmap_update(
+                user_id=user_id,
+                roadmap=updated,
+                state=state,
+                version=updated.version,
+            )
+        except Exception:
+            pass
 
         return updated
 
@@ -242,33 +254,52 @@ class RIQEPipeline:
         self._states[user_id] = new_state
         self._roadmaps[new_roadmap_id] = new_roadmap
 
-        await db.save_knowledge_state(user_id, new_state.to_dict())
-        await db.save_roadmap(new_roadmap.to_dict())
-        await db.save_roadmap_snapshot(
-            new_roadmap.user_id,
-            new_roadmap.roadmap_id,
-            [n.title for n in new_roadmap.nodes],
-        )
+        # Persist (best-effort)
+        try:
+            await db.save_knowledge_state(user_id, new_state.to_dict())
+            await db.save_roadmap(new_roadmap.to_dict())
+            await db.save_roadmap_snapshot(
+                new_roadmap.user_id,
+                new_roadmap.roadmap_id,
+                [n.title for n in new_roadmap.nodes],
+            )
+        except Exception:
+            pass
 
-        self.metrics.log_roadmap_update(
-            user_id=user_id,
-            roadmap=new_roadmap,
-            state=new_state,
-            version=1,
-        )
+        try:
+            self.metrics.log_roadmap_update(
+                user_id=user_id,
+                roadmap=new_roadmap,
+                state=new_state,
+                version=1,
+            )
+        except Exception:
+            pass
 
         return new_state, new_roadmap
 
     # ── helpers ───────────────────────────────────────────────────────
 
     async def _ensure_state(self, user_id: str) -> KnowledgeState:
-        """Return cached state or load from Supabase."""
+        """Return cached state or load from Supabase; auto-init a blank state if not found.
+
+        A blank state is used when the daemon restarted and Supabase has no record
+        yet (e.g. user calls signal/switch before onboarding completes, or after a
+        hot-reload wipes in-memory state). The next onboard() call will overwrite it.
+        """
         if user_id in self._states:
             return self._states[user_id]
-        row = await db.load_knowledge_state(user_id)
+        try:
+            row = await db.load_knowledge_state(user_id)
+        except Exception:
+            row = None
         if row is None:
-            raise ValueError(f"No knowledge state found for user {user_id}")
-        state = KnowledgeState.from_dict(row)
+            state = KnowledgeState(
+                user_id=user_id,
+                user_vector=np.zeros(USER_EMBED_DIM, dtype=np.float32),
+            )
+        else:
+            state = KnowledgeState.from_dict(row)
         self._states[user_id] = state
         return state
 

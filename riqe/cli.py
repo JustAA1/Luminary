@@ -16,8 +16,13 @@ import asyncio
 import json
 import os
 import sys
+import warnings
 from datetime import datetime
 from pathlib import Path
+
+# Suppress MLflow filesystem-backend FutureWarning — it's printed to stderr and
+# confuses the Node.js daemon handler, which treats any stderr as a fatal error.
+warnings.filterwarnings("ignore", category=FutureWarning, module="mlflow")
 
 # Force in-memory DB when running as CLI (no Supabase required)
 os.environ["SUPABASE_URL"] = os.environ.get("SUPABASE_URL", "")

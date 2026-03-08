@@ -9,6 +9,7 @@ import { createInterface } from "readline";
 let daemon: ReturnType<typeof spawn> | null = null;
 let rl: ReturnType<typeof createInterface> | null = null;
 let queue: { resolve: (v: Record<string, unknown>) => void; reject: (e: Error) => void }[] = [];
+let stderrBuf = "";
 
 function startDaemon() {
   if (daemon) return;
@@ -27,6 +28,7 @@ function startDaemon() {
   rl.on("line", (line) => {
     const next = queue.shift();
     if (!next) return;
+    stderrBuf = ""; // clear accumulated warnings on successful response
     try {
       const parsed = line ? JSON.parse(line) : {};
       next.resolve(parsed);
@@ -34,24 +36,30 @@ function startDaemon() {
       next.resolve({ error: line || "Invalid JSON from pipeline" });
     }
   });
+  // Accumulate stderr for diagnostics only — do NOT reject queue items here.
+  // Python warnings (MLflow FutureWarning, HuggingFace notices, etc.) all go to
+  // stderr and must not be treated as fatal errors. The Python daemon catches all
+  // exceptions internally and returns {"error": ...} on stdout instead.
   daemon.stderr?.setEncoding("utf-8");
-  daemon.stderr?.on("data", (chunk) => {
-    const next = queue[0];
-    if (next) next.reject(new Error(chunk.trim() || "Pipeline error"));
+  daemon.stderr?.on("data", (chunk: string) => {
+    stderrBuf += chunk;
   });
   daemon.on("error", (err) => {
     daemon = null;
     rl = null;
+    stderrBuf = "";
     queue.forEach((q) => q.reject(err));
     queue = [];
   });
   daemon.on("close", (code) => {
     if (code !== 0 && code !== null) {
-      const next = queue.shift();
-      if (next) next.reject(new Error(`Pipeline exited with code ${code}`));
+      const msg = stderrBuf.trim() || `Pipeline exited with code ${code}`;
+      queue.forEach((q) => q.reject(new Error(msg)));
+      queue = [];
     }
     daemon = null;
     rl = null;
+    stderrBuf = "";
   });
 }
 
