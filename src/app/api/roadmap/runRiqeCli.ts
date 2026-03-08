@@ -14,7 +14,7 @@ let stderrBuf = "";
 function startDaemon() {
   if (daemon) return;
   const root = path.resolve(process.cwd());
-  const py = process.platform === "win32" ? "python" : "python3";
+  const py = process.platform === "win32" ? "python" : `${root}/.venv/bin/python3`;
   daemon = spawn(py, ["-m", "riqe.cli", "--daemon"], {
     cwd: root,
     stdio: ["pipe", "pipe", "pipe"],

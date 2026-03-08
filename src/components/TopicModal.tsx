@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   X,
   ExternalLink,
@@ -11,8 +11,31 @@ import {
   BookOpen,
   Sparkles,
   Youtube,
+  Loader2,
+  BookMarked,
+  GraduationCap,
+  ScrollText,
+  Globe,
+  GitBranch,
+  Library,
+  Search,
 } from "lucide-react";
 import YouTubeSnippet from "@/components/YouTubeSnippet";
+
+interface Resource {
+  title: string;
+  description: string;
+  label: string;
+  searchUrl: string;
+}
+
+interface ScrapedResource {
+  title: string;
+  description: string;
+  url: string;
+  source: "Wikipedia" | "arXiv" | "Dev.to" | "OpenLibrary" | "GitHub";
+  label: "Article" | "Paper" | "Book" | "Repository" | "PDF / Notes";
+}
 
 interface UpNextItem {
   title: string;
@@ -49,11 +72,24 @@ const youtubeResources = [
   { title: "Deep Dive Tutorial", channel: "Learn Pro", duration: "45:10", views: "2.1M" },
 ];
 
-const articles = [
-  { title: "A Comprehensive Guide", source: "Medium", readTime: "8 min" },
-  { title: "Best Practices & Patterns", source: "Dev.to", readTime: "12 min" },
-  { title: "Official Documentation", source: "MDN Web Docs", readTime: "5 min" },
-];
+const LABEL_STYLE: Record<string, { icon: React.ReactNode; badge: string }> = {
+  "Article":    { icon: <FileText size={14} className="text-blue-400" />,       badge: "bg-blue-500/10 text-blue-400" },
+  "Course":     { icon: <GraduationCap size={14} className="text-dallas-green" />, badge: "bg-dallas-green/10 text-dallas-green" },
+  "PDF / Notes":{ icon: <ScrollText size={14} className="text-red-400" />,       badge: "bg-red-500/10 text-red-400" },
+  "Book":       { icon: <BookMarked size={14} className="text-amber-400" />,    badge: "bg-amber-500/10 text-amber-400" },
+  "Paper":      { icon: <FileText size={14} className="text-purple-400" />,     badge: "bg-purple-500/10 text-purple-400" },
+};
+
+// Skeleton cards shown while loading
+const SKELETON_LABELS = ["Article", "Article", "Course", "PDF / Notes", "Book", "Paper"];
+
+const SOURCE_STYLE: Record<string, { icon: React.ReactNode; badge: string }> = {
+  "Wikipedia":   { icon: <Globe size={14} className="text-sky-400" />,         badge: "bg-sky-500/10 text-sky-400" },
+  "arXiv":       { icon: <FileText size={14} className="text-orange-400" />,   badge: "bg-orange-500/10 text-orange-400" },
+  "Dev.to":      { icon: <FileText size={14} className="text-indigo-400" />,   badge: "bg-indigo-500/10 text-indigo-400" },
+  "OpenLibrary": { icon: <Library size={14} className="text-emerald-400" />,   badge: "bg-emerald-500/10 text-emerald-400" },
+  "GitHub":      { icon: <GitBranch size={14} className="text-gray-300" />,    badge: "bg-gray-500/10 text-gray-300" },
+};
 
 // ── Per-topic "Up Next" suggestions ──────────────────────────────────────────
 // Keys match the real roadmap IDs in roadmap/page.tsx so handleNavigate works.
@@ -249,6 +285,31 @@ function MiniDownArrow() {
 
 export default function TopicModal({ topic, onClose, onNavigate, suggestions, youtubeQueries, whyThis }: TopicModalProps) {
   const [activeTab, setActiveTab] = useState<"resources" | "why" | "next">("resources");
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [scraped, setScraped] = useState<ScrapedResource[]>([]);
+  const [resourcesLoading, setResourcesLoading] = useState(false);
+  const [scrapedLoading, setScrapedLoading] = useState(false);
+
+  useEffect(() => {
+    if (!topic) return;
+    setResources([]);
+    setScraped([]);
+    setResourcesLoading(true);
+    setScrapedLoading(true);
+    fetch("/api/resources", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topic: topic.title }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data.resources)) setResources(data.resources);
+        if (Array.isArray(data.scraped)) setScraped(data.scraped);
+        setScrapedLoading(false);
+      })
+      .catch(() => { setScrapedLoading(false); })
+      .finally(() => setResourcesLoading(false));
+  }, [topic?.title]);
 
   if (!topic) return null;
 
@@ -395,28 +456,116 @@ export default function TopicModal({ topic, onClose, onNavigate, suggestions, yo
                 </div>
               </div>
 
-              {/* Articles */}
+              {/* Scraped resource cards */}
               <div>
                 <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
-                  <FileText size={16} className="text-blue-400" />
-                  Articles
+                  <Sparkles size={16} className="text-dallas-green" />
+                  Resources
+                  {resourcesLoading && <Loader2 size={13} className="animate-spin text-muted ml-1" />}
                 </h3>
                 <div className="space-y-2">
-                  {articles.map((article, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between rounded-xl border border-surface-border bg-background/30 p-4 hover:border-muted-dark transition-colors cursor-pointer"
-                    >
-                      <div>
-                        <p className="text-sm font-medium">{article.title}</p>
-                        <p className="text-xs text-muted-dark">
-                          {article.source} • {article.readTime} read
-                        </p>
-                      </div>
-                      <ExternalLink size={14} className="text-muted-dark" />
-                    </div>
-                  ))}
+                  {resourcesLoading
+                    ? SKELETON_LABELS.map((lbl, i) => {
+                        const style = LABEL_STYLE[lbl] ?? LABEL_STYLE["Article"];
+                        return (
+                          <div key={i} className="flex items-center gap-3 rounded-xl border border-surface-border bg-background/30 p-4 animate-pulse">
+                            <div className="flex-shrink-0 opacity-40">{style.icon}</div>
+                            <div className="flex-1 space-y-2">
+                              <div className="h-3 w-2/3 rounded bg-surface-border" />
+                              <div className="h-2 w-1/2 rounded bg-surface-border" />
+                            </div>
+                            <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase opacity-40 ${style.badge}`}>{lbl}</span>
+                          </div>
+                        );
+                      })
+                    : resources.map((r, i) => {
+                        const style = LABEL_STYLE[r.label] ?? LABEL_STYLE["Article"];
+                        return (
+                          <a
+                            key={i}
+                            href={r.searchUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group flex items-start gap-3 rounded-xl border border-surface-border bg-background/30 p-4 hover:border-dallas-green/40 hover:bg-surface-hover/50 transition-colors"
+                          >
+                            <div className="flex-shrink-0 mt-0.5">{style.icon}</div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium group-hover:text-dallas-green transition-colors leading-snug">
+                                {r.title}
+                              </p>
+                              {r.description && (
+                                <p className="text-xs text-muted mt-1.5 leading-relaxed line-clamp-2">
+                                  {r.description}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex flex-col items-end gap-1.5 flex-shrink-0 ml-2">
+                              <ExternalLink size={12} className="text-muted-dark" />
+                              <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${style.badge}`}>
+                                {r.label}
+                              </span>
+                            </div>
+                          </a>
+                        );
+                      })}
                 </div>
+              </div>
+
+              {/* Related Readings (web-scraped) */}
+              <div>
+                <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold">
+                  <Search size={16} className="text-cyan-400" />
+                  Related Readings
+                  {scrapedLoading && <Loader2 size={13} className="animate-spin text-muted ml-1" />}
+                </h3>
+                {scrapedLoading ? (
+                  <div className="space-y-2">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <div key={i} className="flex items-center gap-3 rounded-xl border border-surface-border bg-background/30 p-4 animate-pulse">
+                        <div className="h-4 w-4 rounded bg-surface-border flex-shrink-0" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-3 w-3/4 rounded bg-surface-border" />
+                          <div className="h-2 w-1/2 rounded bg-surface-border" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : scraped.length > 0 ? (
+                  <div className="space-y-2">
+                    {scraped.map((r, i) => {
+                      const style = SOURCE_STYLE[r.source] ?? SOURCE_STYLE["Wikipedia"];
+                      return (
+                        <a
+                          key={i}
+                          href={r.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group flex items-start gap-3 rounded-xl border border-surface-border bg-background/30 p-4 hover:border-cyan-500/40 hover:bg-surface-hover/50 transition-colors"
+                        >
+                          <div className="flex-shrink-0 mt-0.5">{style.icon}</div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium group-hover:text-cyan-400 transition-colors leading-snug">
+                              {r.title}
+                            </p>
+                            {r.description && (
+                              <p className="text-xs text-muted mt-1.5 leading-relaxed line-clamp-2">
+                                {r.description}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex flex-col items-end gap-1.5 flex-shrink-0 ml-2">
+                            <ExternalLink size={12} className="text-muted-dark" />
+                            <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${style.badge}`}>
+                              {r.source}
+                            </span>
+                          </div>
+                        </a>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-dark italic">No related readings found.</p>
+                )}
               </div>
 
               {/* AI PowerPoints */}
